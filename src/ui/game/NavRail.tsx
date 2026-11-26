@@ -15,11 +15,13 @@ const ITEMS: { id: Panel; label: string; icon: string }[] = [
   { id: 'team', label: 'Team', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM1 21c0-4 4-7 8-7s8 3 8 7zM17 11a3 3 0 1 0 0-6M19 14c2 1 4 3 4 7h-4' },
   { id: 'rivals', label: 'The Chart', icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
   { id: 'wholesale', label: 'Wholesale', icon: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10' },
+  { id: 'world', label: 'World', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2c3 3 4 6 4 10s-1 7-4 10c-3-3-4-6-4-10s1-7 4-10z' },
+  { id: 'empire', label: 'Empire', icon: 'M3 21h18M5 21V10l7-6 7 6v11M9 21v-6h6v6' },
   { id: 'stats', label: 'Numbers', icon: 'M3 3v18h18M7 14l4-4 3 3 6-6' },
 ];
 
-const LOCKED = ['World'];
-const STROKE = new Set<Panel>(['trends', 'marketing', 'team', 'rivals', 'wholesale', 'stats']);
+const LOCKED: string[] = [];
+const STROKE = new Set<Panel>(['trends', 'marketing', 'team', 'rivals', 'wholesale', 'stats', 'world', 'empire']);
 
 export function NavRail() {
   const { store, s } = useGame();
@@ -56,7 +58,7 @@ export function NavRail() {
           {store.tutorial && coachPanel === it.id && <i className="coach-ring" aria-hidden="true" />}
         </button>
       ))}
-      <div className="rail-sep" />
+      {LOCKED.length > 0 && <div className="rail-sep" />}
       {LOCKED.map((l) => (
         <div key={l} className="rail-btn locked" title="Coming in the next update: open shops in London, Paris, Tokyo, LA and Seoul">
           <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">

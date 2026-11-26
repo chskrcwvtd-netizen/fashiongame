@@ -15,6 +15,8 @@ import { CampaignSplash, Intro, LiveDrop } from './game/Moments';
 import { RivalsPanel } from './game/RivalsPanel';
 import { WholesalePanel } from './game/WholesalePanel';
 import { StatsPanel } from './game/StatsPanel';
+import { WorldPanel } from './game/WorldPanel';
+import { EmpirePanel } from './game/EmpirePanel';
 import { music } from '../audio/music';
 import { TrendsPanel } from './game/TrendsPanel';
 import { MarketingPanel } from './game/MarketingPanel';
@@ -82,6 +84,8 @@ function GameScreen() {
         {store.panel === 'rivals' && <RivalsPanel />}
         {store.panel === 'wholesale' && <WholesalePanel />}
         {store.panel === 'stats' && <StatsPanel />}
+        {store.panel === 'world' && <WorldPanel />}
+        {store.panel === 'empire' && <EmpirePanel />}
       </main>
       <Feed />
       <Toasts />

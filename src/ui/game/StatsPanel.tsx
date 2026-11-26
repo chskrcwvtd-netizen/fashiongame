@@ -1,4 +1,4 @@
-import { MILESTONES, dateInfo, getDesign } from '../../engine';
+import { MILESTONES, dateInfo, getDesign, netWorth } from '../../engine';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { count, money, useGame } from '../hooks';
 
@@ -48,8 +48,8 @@ export function StatsPanel() {
           <span className="kpi-label">drops sold out</span>
         </div>
         <div className="kpi">
-          <span className="kpi-num">{money(s.stats.peakCash, true)}</span>
-          <span className="kpi-label">most cash at once</span>
+          <span className="kpi-num">{money(netWorth(s), true)}</span>
+          <span className="kpi-label">your net worth ({s.corporate.ownership}% owned)</span>
         </div>
       </div>
 

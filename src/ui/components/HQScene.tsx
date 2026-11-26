@@ -69,14 +69,14 @@ export function HQScene({ state, queue, courier = false }: Props) {
   const light = `light-${uid}`;
   const name = state.brand.name;
 
-  const wall = level === 0 ? '#1b1724' : level === 1 ? '#2a1a1f' : '#191a24';
-  const floor = level === 0 ? '#121019' : level === 1 ? '#2b2018' : '#2a2c38';
+  const wall = level === 0 ? '#1b1724' : level === 1 ? '#2a1a1f' : level === 3 ? '#0d1020' : '#191a24';
+  const floor = level === 0 ? '#121019' : level === 1 ? '#2b2018' : level === 3 ? '#c4cad6' : '#2a2c38';
 
   const boxSpots: Array<[number, number]> = [];
   for (let i = 0; i < boxes; i++) {
     const col = i % 4;
     const row = Math.floor(i / 4);
-    boxSpots.push([level === 2 ? 70 + col * 56 : 60 + col * 58, 470 - row * 40 - (col % 2) * 2]);
+    boxSpots.push([level >= 2 ? 70 + col * 56 : 60 + col * 58, 470 - row * 40 - (col % 2) * 2]);
   }
 
   return (
@@ -94,6 +94,11 @@ export function HQScene({ state, queue, courier = false }: Props) {
           <rect width="60" height="30" fill="#3a1f22" />
           <path d="M0 0H60M0 15H60M30 0V15M0 15V30M60 15V30" stroke="#24120f" strokeWidth="3" />
         </pattern>
+        <linearGradient id="tower-floor" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#e9edf5" />
+          <stop offset=".3" stopColor="#8a90a0" />
+          <stop offset="1" stopColor="#2a2c38" />
+        </linearGradient>
         <radialGradient id={light} cx="0.5" cy="0" r="0.9">
           <stop offset="0" stopColor="#ffe9b0" stopOpacity=".35" />
           <stop offset="1" stopColor="#ffe9b0" stopOpacity="0" />
@@ -183,15 +188,40 @@ export function HQScene({ state, queue, courier = false }: Props) {
         </g>
       )}
 
+
+      {level === 3 && (
+        <g>
+          {/* panoramic window over the night city */}
+          <rect x="-600" y="10" width="2160" height="380" fill="#060a18" />
+          {Array.from({ length: 40 }, (_, i) => i).map((i) => {
+            const x = -560 + i * 55;
+            const h = 80 + ((i * 37) % 170);
+            return <rect key={i} x={x} y={390 - h} width="46" height={h} fill={i % 3 ? '#0c1326' : '#101a33'} />;
+          })}
+          {Array.from({ length: 90 }, (_, i) => i).map((i) => (
+            <rect key={`w${i}`} x={-540 + ((i * 97) % 2100)} y={230 + ((i * 53) % 150)} width="5" height="7" fill={i % 4 ? '#ffe08a' : '#6cf2ff'} opacity=".7" />
+          ))}
+          {Array.from({ length: 9 }, (_, i) => i).map((i) => (
+            <path key={`m${i}`} d={`M${i * 120} 10 V390`} stroke="#c4cad6" strokeOpacity=".35" strokeWidth="5" />
+          ))}
+          <path d="M-600 200 H1560" stroke="#c4cad6" strokeOpacity=".25" strokeWidth="3" />
+          <circle cx="840" cy="70" r="26" fill="#e8e1cf" opacity=".85" />
+          {/* chrome floor reflection */}
+          <rect x="-600" y="400" width="2160" height="240" fill="url(#tower-floor)" />
+          <ellipse cx="640" cy="470" rx="80" ry="16" fill="#e9edf5" />
+          <rect x="560" y="440" width="160" height="30" fill="#8a90a0" />
+          <ellipse cx="640" cy="440" rx="80" ry="16" fill="#ffffff" />
+        </g>
+      )}
       {/* neon sign */}
       <g className="hq-neon" filter={`url(#${glow})`}>
-        <EmblemShape id={state.brand.logo.glyph} fill={logoColor} hole={wall} x={level === 2 ? 70 : 60} y={level === 2 ? 90 : 120} size={level === 2 ? 70 : 54} badge={state.brand.logo.badge} />
+        <EmblemShape id={state.brand.logo.glyph} fill={logoColor} hole={wall} x={level >= 2 ? 70 : 60} y={level >= 2 ? 90 : 120} size={level >= 2 ? 70 : 54} badge={state.brand.logo.badge} />
         <text
-          x={level === 2 ? 160 : 130}
-          y={level === 2 ? 140 : 160}
+          x={level >= 2 ? 160 : 130}
+          y={level >= 2 ? 140 : 160}
           fontFamily={WORDMARK_FONT[state.brand.logo.font ?? 'chrome']}
           fontWeight={800}
-          fontSize={level === 2 ? 50 : level === 1 ? 40 : 32}
+          fontSize={level >= 2 ? 50 : level === 1 ? 40 : 32}
           fill="none"
           stroke={logoColor}
           strokeWidth={2.4}
@@ -228,9 +258,9 @@ export function HQScene({ state, queue, courier = false }: Props) {
 
       {/* mannequin with the latest design */}
       {latest && (
-        <g transform={level === 2 ? 'translate(575 260)' : level === 1 ? 'translate(470 230)' : 'translate(430 250)'}>
-          <rect x="62" y="150" width="6" height={level === 2 ? 40 : 110} fill="#9aa1b0" />
-          <ellipse cx="65" cy={level === 2 ? 190 : 262} rx="34" ry="7" fill="#9aa1b0" />
+        <g transform={level >= 2 ? 'translate(575 260)' : level === 1 ? 'translate(470 230)' : 'translate(430 250)'}>
+          <rect x="62" y="150" width="6" height={level >= 2 ? 40 : 110} fill="#9aa1b0" />
+          <ellipse cx="65" cy={level >= 2 ? 190 : 262} rx="34" ry="7" fill="#9aa1b0" />
           <circle cx="65" cy="-8" r="14" fill="#c4cad6" />
           <svg x="0" y="0" width="130" height="139" viewBox="0 0 300 320">
             <GarmentPreview design={latest} logo={state.brand.logo} size={300} />
@@ -252,7 +282,7 @@ export function HQScene({ state, queue, courier = false }: Props) {
 
       {/* gold plaque for the first million */}
       {state.milestones?.revenue_1m && (
-        <g transform={level === 2 ? 'translate(860 60)' : 'translate(820 210)'}>
+        <g transform={level >= 2 ? 'translate(860 60)' : 'translate(820 210)'}>
           <rect width="70" height="50" rx="4" fill="#d9b36a" stroke="#6a4e1a" strokeWidth="3" />
           <text x="35" y="22" textAnchor="middle" fontFamily="'Unbounded', sans-serif" fontWeight={800} fontSize="13" fill="#3a2a0a">
             $1M
@@ -279,7 +309,7 @@ export function HQScene({ state, queue, courier = false }: Props) {
       {Array.from({ length: queue }).map((_, i) => (
         <Person
           key={`q${i}`}
-          x={level === 0 ? 860 - i * 38 : level === 2 ? 920 - i * 34 : 920 - i * 40}
+          x={level === 0 ? 860 - i * 38 : level >= 2 ? 920 - i * 34 : 920 - i * 40}
           y={530 - (i % 2) * 10}
           color={['#ff3ec8', '#19c7ff', '#c6ff1a', '#7b3fe4', '#ff7a1a', '#e8e1cf'][i % 6]}
           delay={i * 0.17}

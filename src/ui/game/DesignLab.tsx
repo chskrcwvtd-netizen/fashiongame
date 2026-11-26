@@ -62,7 +62,19 @@ const GARMENT_ICONS: Record<string, string> = {
   puffer: 'M7 3h10l5 5-2 11-2-1v4H6v-4l-2 1L2 8zM6 9h12M6 13h12M6 17h12',
   cap: 'M3 15C3 8 7 5 12 5s9 3 9 10zM1 15h14c3 0 6 1 7 3H3c-2 0-2-3-2-3z',
   beanie: 'M4 18C4 9 7 5 12 5s8 4 8 13zM3 15h18v5H3zM12 1a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
+  track: 'M8 3h8l5 5-2 9-2-1v6H7v-6l-2 1-2-9zM11.5 3h1v19h-1z',
+  sneakers: 'M2 17c0-3 3-4 6-5l3-5 4 1c0 2 2 3 4 3l3 1c1 1 1 2 1 4H2zM1 18h22v3H1z',
+  bag: 'M5 9h14v12H5zM8 9a4 6 0 0 1 8 0',
+  jewelry: 'M4 2q8 12 16 0M12 12l4 4-4 7-4-7z',
+  perfume: 'M7 9h10v13H7zM10 6h4v3h-4zM9 2h6v4H9z',
 };
+
+const GARMENT_SUFFIX = new RegExp(`(${Object.values(GARMENTS).map((g) => g.name.toUpperCase()).sort((a, b) => b.length - a.length).join('|')})$`);
+
+/** Keep the design name's last word in step with the piece ("... HOODIE" → "... SNEAKERS"). */
+function renameForGarment(name: string, g: keyof typeof GARMENTS) {
+  return GARMENT_SUFFIX.test(name) ? name.replace(GARMENT_SUFFIX, GARMENTS[g].name.toUpperCase()) : name;
+}
 
 /** 'hot' / 'rising' marker class from public trend data. */
 function heatClass(s: Parameters<typeof trendPop>[0], cat: TrendCategory, id: string) {
@@ -141,7 +153,7 @@ export function DesignLab() {
           <label>Piece</label>
           <div className="chips">
             {GARMENT_IDS.filter((g) => !LOCKED_GARMENTS[g] || s.unlocks.includes(LOCKED_GARMENTS[g]!)).map((g) => (
-              <Chip key={g} value={g} current={draft.garment} heat={heatClass(s, 'garment', g)} onPick={(v) => setDraft((d) => ({ ...d, garment: v, name: d.name.replace(/(TEE|HOODIE|CARGO PANTS|PUFFER JACKET|CAP|BEANIE)$/, GARMENTS[v].name.toUpperCase()) }))} testid={`garment-${g}`}>
+              <Chip key={g} value={g} current={draft.garment} heat={heatClass(s, 'garment', g)} onPick={(v) => setDraft((d) => ({ ...d, garment: v, name: renameForGarment(d.name, v) }))} testid={`garment-${g}`}>
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path d={GARMENT_ICONS[g]} fill="currentColor" />
                 </svg>

@@ -1,4 +1,4 @@
-import { STAGE3, playerRank, HQ_LEVELS, activeDrop, capacity, getDesign, nextHqLevel, stockUnits, incomingUnits, upgradeCost, upgradeHQ, weeklyBillEstimate } from '../../engine';
+import { STAGE3, playerRank, towerAllowed, HQ_LEVELS, activeDrop, capacity, getDesign, nextHqLevel, stockUnits, incomingUnits, upgradeCost, upgradeHQ, weeklyBillEstimate } from '../../engine';
 import { HQScene } from '../components/HQScene';
 import { useState } from 'react';
 import { LogoEditor } from '../components/Logo';
@@ -100,9 +100,10 @@ export function HQPanel() {
                 <li>+{Math.round((next.visitorMult - 1) * 100)}% webshop visitors{next.walkIn ? ', plus walk-in shoppers' : ''}</li>
                 <li>Rent {money(next.rent)} per week (now {money(hq.rent)})</li>
               </ul>
+              {next.level === 3 && !towerAllowed(s) && <p className="muted small">Open in two cities abroad first (World screen).</p>}
               <button
                 className="btn btn-primary"
-                disabled={s.cash < cost}
+                disabled={s.cash < cost || (next.level === 3 && !towerAllowed(s))}
                 data-testid="upgrade-hq"
                 onClick={() => store.act(upgradeHQ, { sound: 'upgrade', toast: `Welcome to the ${next.name}.`, feed: `${s.brand.name} moved into the ${next.name}.` })}
               >
@@ -111,8 +112,8 @@ export function HQPanel() {
             </>
           ) : (
             <>
-              <h3>Top floor, for now</h3>
-              <p className="muted">The Flagship is the biggest HQ in this version. A Glass Tower is coming.</p>
+              <h3>Top of the skyline</h3>
+              <p className="muted">The Glass Tower is as big as it gets. The world is your market now.</p>
             </>
           )}
         </section>

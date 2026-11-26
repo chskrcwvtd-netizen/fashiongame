@@ -22,6 +22,7 @@ import {
 } from '../../engine';
 import { count, money, useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
+import { ShowsCard } from './ShowsCard';
 
 function heat(pop: number) {
   return pop > 0.75 ? 'hot right now' : pop > 0.5 ? 'warm' : 'cold';
@@ -188,6 +189,7 @@ export function MarketingPanel() {
             })}
           </ul>
         </section>
+        <ShowsCard />
       </div>
     </div>
   );

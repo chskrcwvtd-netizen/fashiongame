@@ -286,3 +286,56 @@ test('stage 3: tutorial, chart, wholesale, trophies, logo, back print', async ({
   await page.screenshot({ path: 'test-results/stage3-hq.png' });
   expect(errors).toEqual([]);
 });
+
+test('stage 4: world, product lines, investors, stock market, takeover, runway', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await startGame(page, 'STAGE FOUR');
+  await page.getByTestId('speed-0').click();
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    const s = st.state;
+    s.cash = 20_000_000;
+    s.hqLevel = 2;
+    s.reputation = 60;
+    s.followers = 400_000;
+    s.stats.weeklyRevenue = [900_000, 900_000];
+    st.endTutorial();
+    st.bump();
+  });
+  for (let i = 0; i < 3; i++) {
+    await page.getByTestId('nav-lab').click();
+    await page.getByTestId('design-name').fill(`PIECE ${i}`);
+    await page.getByTestId('save-design').click();
+  }
+
+  await page.getByTestId('nav-world').click();
+  await page.getByTestId('expand-london').click();
+  await expect(page.getByTestId('city-london')).toContainText('Shipping here');
+  await page.getByTestId('expand-london').click();
+  await expect(page.getByTestId('city-london')).toContainText('Your store is open');
+
+  await page.getByTestId('nav-empire').click();
+  await page.getByTestId('unlock-line_sneakers').click();
+  await expect(page.getByTestId('line-line_sneakers')).toContainText('In the Design Lab');
+  await page.getByTestId('raise-round').click();
+  await page.getByTestId('go-public').click();
+  await expect(page.getByTestId('panel-empire')).toContainText('Share price');
+  await page.getByTestId('buy-krush').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.rivals.some((r: { id: string }) => r.id === 'krush'))).toBe(false);
+
+  await page.getByTestId('nav-lab').click();
+  await expect(page.getByTestId('garment-sneakers')).toBeVisible();
+  await page.getByTestId('garment-sneakers').click();
+  await expect(page.locator('#lab-turntable svg').first()).toBeVisible();
+
+  await page.getByTestId('nav-marketing').click();
+  await page.getByTestId('book-runway').click();
+  await page.getByTestId('speed-4').click();
+  await expect(page.getByTestId('event-outcome')).toBeVisible({ timeout: 20_000 });
+  if (await page.getByTestId('campaign-splash').isVisible()) await page.getByTestId('campaign-continue').click();
+  await page.getByTestId('event-ok').click();
+  await page.getByTestId('nav-hq').click();
+  await page.screenshot({ path: 'test-results/stage4-hq.png' });
+  expect(errors).toEqual([]);
+});

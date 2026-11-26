@@ -20,7 +20,7 @@ import type { SfxName } from '../audio/sfx';
 
 export const MS_PER_DAY_1X = 2000;
 
-export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team' | 'rivals' | 'wholesale' | 'stats';
+export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team' | 'rivals' | 'wholesale' | 'stats' | 'world' | 'empire';
 export type Phase = 'menu' | 'game';
 export type Tone = 'money' | 'good' | 'bad' | 'info';
 
@@ -376,6 +376,22 @@ export class GameStore {
         case 'campaignWon':
           if (!s.campaign.winSeen) this.campaignSplash = { kind: 'won', rank: 1 };
           this.sound.play('milestone');
+          break;
+        case 'earnings':
+          this.pushFeed(e.beat ? `Quarterly results beat expectations. Shares up to $${e.price.toFixed(2)}.` : `Quarterly results missed. Shares down to $${e.price.toFixed(2)}.`, e.beat ? 'good' : 'bad');
+          this.toast(e.beat ? 'Earnings beat' : 'Earnings miss', `Share price $${e.price.toFixed(2)}`, e.beat ? 'good' : 'bad');
+          this.sound.play(e.beat ? 'cash' : 'flop');
+          break;
+        case 'investorTarget':
+          this.pushFeed(e.met ? `${e.round} investors: target hit. They are thrilled.` : `${e.round} investors: target missed.`, e.met ? 'good' : 'bad');
+          if (e.met) this.sound.play('notify');
+          break;
+        case 'showResult':
+          this.eventOutcome = { title: e.outcome === 'ovation' ? `${e.name}: standing ovation` : e.outcome === 'good' ? `${e.name}: good show` : `${e.name}: panned`, text: e.text };
+          this.pushFeed(`${e.name}: ${e.text}`, e.outcome === 'panned' ? 'bad' : 'good');
+          this.sound.play(e.outcome === 'ovation' ? 'soldout' : e.outcome === 'good' ? 'milestone' : 'flop');
+          break;
+        case 'subsidiaryIncome':
           break;
         case 'campaignEnded':
           if (!s.campaign.endSeen) this.campaignSplash = { kind: 'ended', rank: e.rank };
