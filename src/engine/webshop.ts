@@ -1,6 +1,7 @@
 import { DIFFICULTIES, ECON, GARMENTS, HQ_LEVELS } from './content';
 import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './design';
 import { poisson } from './rng';
+import { visitorMult } from './marketing';
 import type { ActionResult, GameEvent, GameState } from './types';
 
 /** 1 → 0 as followers approach the market ceiling. */
@@ -45,7 +46,7 @@ export function setListing(state: GameState, designId: string, price: number, ac
 
 export function dailyVisitors(state: GameState): number {
   const hq = HQ_LEVELS[state.hqLevel];
-  return (ECON.baseVisitors + state.followers * ECON.visitorsPerFollower + hq.walkIn) * hq.visitorMult * (1 + state.hype / 100);
+  return (ECON.baseVisitors + state.followers * ECON.visitorsPerFollower + hq.walkIn) * hq.visitorMult * (1 + state.hype / 100) * visitorMult(state);
 }
 
 function activeListings(state: GameState) {

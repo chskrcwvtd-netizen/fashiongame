@@ -3,6 +3,7 @@ import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './desig
 import { newId } from './newGame';
 import { randRange } from './rng';
 import { availableUnits, growthRoom, recordSale } from './webshop';
+import { COLLAB_REVENUE_SHARE, collabDemand } from './marketing';
 import type { ActionResult, Drop, DropResult, GameEvent, GameState } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -84,7 +85,7 @@ export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'pric
   const h = drop.hype / 100;
   const fairDrop = fairPrice(state, design, quality) * (1 + 0.6 * h);
   const pf = priceFactor(fairDrop, drop.price, ECON.priceElasticity);
-  const base = state.followers * (0.05 + 0.25 * Math.pow(h, 1.2)) + 30 * h + 5;
+  const base = state.followers * (0.05 + 0.25 * Math.pow(h, 1.2)) + 30 * h + 5 + collabDemand(state);
   return (
     base *
     appeal(state, design, quality) *
@@ -104,6 +105,12 @@ function resolveDrop(state: GameState, drop: Drop, events: GameEvent[]) {
   lot.units -= sold;
   const gross = sold * drop.price;
   if (sold > 0) recordSale(state, drop.designId, sold, gross, events);
+  let artistCut = 0;
+  if (state.collab) {
+    artistCut = gross * COLLAB_REVENUE_SHARE;
+    state.cash -= artistCut;
+    state.collab = null;
+  }
   state.stats.dropsTotal += 1;
   if (outcome === 'soldout') {
     state.stats.dropsSoldOut += 1;
@@ -123,7 +130,7 @@ function resolveDrop(state: GameState, drop: Drop, events: GameEvent[]) {
     outcome,
     units: drop.units,
     sold,
-    revenue: gross * (1 - ECON.platformCut),
+    revenue: gross * (1 - ECON.platformCut) - artistCut,
     demand,
     minutes: outcome === 'soldout' ? clamp(Math.round(60 / Math.pow(Math.max(ratio, 1), 1.5)), 1, 59) : null,
     resalePrice: outcome === 'soldout' ? Math.round(drop.price * (1 + 0.4 * Math.min(ratio, 4))) : null,

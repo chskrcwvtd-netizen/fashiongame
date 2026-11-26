@@ -1,5 +1,7 @@
 import { FACTORIES, HQ_LEVELS, DIFFICULTIES } from './content';
 import { designQuality, getDesign, unitCost } from './design';
+import { queueEvent } from './events';
+import { sourcerDefectMult } from './team';
 import { newId } from './newGame';
 import { chance, randInt, randRange } from './rng';
 import type { ActionResult, FactoryId, GameEvent, GameState } from './types';
@@ -52,7 +54,7 @@ export function placeOrder(state: GameState, input: OrderInput): ActionResult {
     designId: design.id,
     factoryId: f.id,
     quantity: q,
-    quality: designQuality(design, f.id),
+    quality: designQuality(design, f.id, state),
     unitCost: unitCost(state, design, f.id),
     orderedDay: state.day,
     etaDay: state.day + f.leadDays,
@@ -79,18 +81,16 @@ export function processProduction(state: GameState, events: GameEvent[]): void {
       continue;
     }
     let units = o.quantity;
-    if (chance(state, f.defectChance * bad)) {
+    if (chance(state, f.defectChance * bad * sourcerDefectMult(state))) {
       const lost = Math.max(1, Math.round(units * randRange(state, 0.15, 0.4)));
       units -= lost;
       events.push({ type: 'defect', orderId: o.id, designId: o.designId, lost });
-      if (lost / o.quantity > 0.25) state.reputation = Math.max(0, state.reputation - 2);
+      // the player decides what happens to the bad pieces
+      queueEvent(state, 'factory_defect', { designId: o.designId, lost, factoryId: f.id, unitCost: o.unitCost, quality: o.quality }, events);
     }
     if (f.scandalChance > 0 && chance(state, f.scandalChance * bad)) {
-      const repLoss = 12;
-      state.reputation = Math.max(0, state.reputation - repLoss);
-      state.followers = Math.round(state.followers * 0.97);
-      state.hype = Math.min(100, state.hype + 4);
-      events.push({ type: 'scandal', factoryId: f.id, repLoss });
+      events.push({ type: 'scandal', factoryId: f.id, repLoss: 0 });
+      queueEvent(state, 'factory_scandal', { factoryId: f.id }, events);
     }
     const lot = state.inventory[o.designId];
     if (lot && lot.units > 0) {

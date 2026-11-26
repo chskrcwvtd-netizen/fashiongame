@@ -39,6 +39,7 @@ const DEFAULT: DesignInput = {
   font: 'chrome',
   emblem: 'logo',
   material: 'standard',
+  vibe: 'y2k',
 };
 
 const GARMENT_ICONS: Record<string, string> = {

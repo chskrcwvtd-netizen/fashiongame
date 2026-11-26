@@ -6,7 +6,12 @@ import type {
   GraphicKind,
   MaterialId,
   PatternId,
+  PlatformId,
+  PostKind,
+  RoleId,
   Season,
+  TraitId,
+  VibeId,
 } from './types';
 
 export const SEASONS: Season[] = ['Spring', 'Summer', 'Fall', 'Winter'];
@@ -191,4 +196,116 @@ export const ECON = {
   dropMaxDays: 14,
   dropPostponeDays: 3,
   maxListingPrice: 10000,
+};
+
+// ---------------------------------------------------------------- stage 2
+
+
+export const VIBES: Record<VibeId, { id: VibeId; name: string; blurb: string; taste: number }> = {
+  y2k: { id: 'y2k', name: 'Y2K', blurb: 'Chrome, butterflies, low-rise nostalgia.', taste: 0.65 },
+  gorpcore: { id: 'gorpcore', name: 'Gorpcore', blurb: 'Hiking gear in the club.', taste: 0.55 },
+  techwear: { id: 'techwear', name: 'Techwear', blurb: 'Straps, zips, all black.', taste: 0.6 },
+  grunge: { id: 'grunge', name: 'Grunge', blurb: 'Distressed, moody, loud.', taste: 0.55 },
+  skate: { id: 'skate', name: 'Skate', blurb: 'Boxy fits and scuffed shoes.', taste: 0.6 },
+  luxury: { id: 'luxury', name: 'Luxury', blurb: 'Quiet logos, loud price tags.', taste: 0.5 },
+  cyber: { id: 'cyber', name: 'Cyber', blurb: 'Neon glitch, future dread.', taste: 0.55 },
+  retro: { id: 'retro', name: 'Retro Sport', blurb: 'Track tops and old-school stripes.', taste: 0.5 },
+};
+export const VIBE_IDS = Object.keys(VIBES) as VibeId[];
+
+/** Default vibe for designs made before vibes existed. */
+export const PATTERN_VIBE: Record<string, VibeId> = {
+  solid: 'luxury', camo: 'gorpcore', tiedye: 'grunge', checker: 'skate', stripes: 'retro', flames: 'grunge', grid: 'y2k', gradient: 'cyber',
+};
+
+export interface RoleDef {
+  id: RoleId;
+  name: string;
+  does: string;
+  baseSalary: number;
+}
+
+export const ROLES: Record<RoleId, RoleDef> = {
+  designer: { id: 'designer', name: 'Designer', does: 'Raises the quality of new batches and how well pieces fit the trends.', baseSalary: 450 },
+  marketer: { id: 'marketer', name: 'Marketer', does: 'One extra post a day, better odds of going viral, stronger influencer deals.', baseSalary: 400 },
+  sourcer: { id: 'sourcer', name: 'Sourcer', does: 'Cheaper production and fewer defects.', baseSalary: 380 },
+  manager: { id: 'manager', name: 'Manager', does: 'Keeps the team happy and trims the weekly bills.', baseSalary: 500 },
+  analyst: { id: 'analyst', name: 'Trend Analyst', does: 'Shows where trends are heading, weeks ahead.', baseSalary: 420 },
+};
+export const ROLE_IDS = Object.keys(ROLES) as RoleId[];
+
+export const TRAITS: Record<TraitId, { id: TraitId; name: string; blurb: string }> = {
+  perfectionist: { id: 'perfectionist', name: 'Perfectionist', blurb: 'Works 15% better, takes flops personally.' },
+  hypebeast: { id: 'hypebeast', name: 'Hype Beast', blurb: 'Loves sold-out drops, gets bored without them.' },
+  loyal: { id: 'loyal', name: 'Loyal', blurb: 'Mood never drops below 30.' },
+  diva: { id: 'diva', name: 'Diva', blurb: 'Works 25% better, always a little unhappy.' },
+  chill: { id: 'chill', name: 'Chill', blurb: 'Easy to keep happy.' },
+};
+export const TRAIT_IDS = Object.keys(TRAITS) as TraitId[];
+
+/** Staff slots per HQ level. */
+export const STAFF_SLOTS = [2, 5, 10, 20];
+
+export const FIRST_NAMES = ['Bence', 'Lili', 'Marco', 'Aiko', 'Dóra', 'Kofi', 'Zoé', 'Tamás', 'Nia', 'Levente', 'Ines', 'Jun', 'Réka', 'Omar', 'Petra', 'Malik', 'Hanna', 'Viktor', 'Sasha', 'Emőke', 'Rafa', 'Mei', 'Ádám', 'Luca'];
+export const LAST_NAMES = ['Kovács', 'Brandt', 'Okafor', 'Tanaka', 'Szűcs', 'Moreau', 'Varga', 'Lindqvist', 'Haddad', 'Fekete', 'Novak', 'Reyes', 'Balogh', 'Ishikawa', 'Mensah', 'Takács', 'Duval', 'Petrov'];
+
+export const PLATFORMS: Record<PlatformId, { id: PlatformId; name: string; blurb: string; reach: number; viral: number }> = {
+  loopz: { id: 'loopz', name: 'Loopz', blurb: 'Short videos. Big swings.', reach: 1.0, viral: 1.4 },
+  glint: { id: 'glint', name: 'Glint', blurb: 'Photo feed. Steady growth.', reach: 1.25, viral: 0.7 },
+};
+
+export const POST_KINDS: Record<PostKind, { id: PostKind; name: string; blurb: string }> = {
+  fit: { id: 'fit', name: 'Fit pic', blurb: 'Show off a piece. Works best when it fits the trends.' },
+  bts: { id: 'bts', name: 'Behind the scenes', blurb: 'Basement life. Small but builds reputation.' },
+  meme: { id: 'meme', name: 'Meme', blurb: 'Pure chaos. Highest viral odds, can backfire.' },
+  teaser: { id: 'teaser', name: 'Drop teaser', blurb: 'Free hype for your upcoming drop.' },
+};
+
+export interface InfluencerDef {
+  id: string;
+  name: string;
+  handle: string;
+  audience: number;
+  fee: number;
+  vibe: VibeId;
+  risk: number;
+  minFollowers: number;
+}
+
+export const INFLUENCERS: InfluencerDef[] = [
+  { id: 'zsofi', name: 'Zsófi Neon', handle: '@zsofineon', audience: 18000, fee: 900, vibe: 'y2k', risk: 0.05, minFollowers: 0 },
+  { id: 'kai', name: 'Kai Rubber', handle: '@kairubber', audience: 42000, fee: 2200, vibe: 'skate', risk: 0.08, minFollowers: 800 },
+  { id: 'bianca', name: 'Bianca Glitter', handle: '@biancaglttr', audience: 90000, fee: 5000, vibe: 'cyber', risk: 0.12, minFollowers: 2500 },
+  { id: 'otto', name: 'Ottó Vapor', handle: '@ottovapor', audience: 150000, fee: 9000, vibe: 'gorpcore', risk: 0.06, minFollowers: 6000 },
+  { id: 'nell', name: 'Nell Ozone', handle: '@nellozone', audience: 320000, fee: 20000, vibe: 'luxury', risk: 0.1, minFollowers: 15000 },
+  { id: 'marcus', name: 'Marcus Static', handle: '@mstaticfits', audience: 600000, fee: 42000, vibe: 'techwear', risk: 0.15, minFollowers: 40000 },
+];
+
+export interface ArtistDef {
+  id: string;
+  name: string;
+  genre: string;
+  fans: number;
+  fee: number;
+  vibe: VibeId;
+  minFollowers: number;
+}
+
+export const ARTISTS: ArtistDef[] = [
+  { id: 'halogen', name: 'Kid Halogen', genre: 'rage', fans: 25000, fee: 2500, vibe: 'cyber', minFollowers: 1000 },
+  { id: 'tungsten', name: 'Baby Tungsten', genre: 'hyperpop', fans: 60000, fee: 6000, vibe: 'y2k', minFollowers: 3000 },
+  { id: 'velcro', name: 'Velcro Prince', genre: 'trap', fans: 140000, fee: 15000, vibe: 'techwear', minFollowers: 8000 },
+  { id: 'bleach', name: 'Nova Bleach', genre: 'alt-pop', fans: 300000, fee: 35000, vibe: 'grunge', minFollowers: 20000 },
+  { id: 'ghostline', name: 'Ghostline', genre: 'drill', fans: 700000, fee: 80000, vibe: 'luxury', minFollowers: 50000 },
+];
+
+export const STAGE2 = {
+  trendReportCost: 1500,
+  trendReportDays: 42,
+  eventChancePerDay: 0.045,
+  eventMinGapDays: 9,
+  teamNightCostPerHead: 120,
+  teamNightCooldown: 28,
+  influencerDays: 7,
+  marketSalaryVariance: 0.15,
 };

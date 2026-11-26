@@ -12,3 +12,7 @@ export * from './hq';
 export * from './tick';
 export * from './save';
 export * from './names';
+export * from './trends';
+export * from './team';
+export * from './marketing';
+export * from './events';

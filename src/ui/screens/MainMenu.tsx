@@ -90,7 +90,7 @@ function NewGame({ onBack }: { onBack: () => void }) {
             <span className="logo-preview-name">{name.trim().toUpperCase() || 'YOUR BRAND'}</span>
           </div>
           <GarmentPreview
-            design={{ name: 'preview', garment: 'hoodie', primary: 'black', secondary: color, pattern: 'solid', graphic: 'emblem', emblem: 'logo', text: '', font: 'chrome', material: 'standard' }}
+            design={{ name: 'preview', garment: 'hoodie', primary: 'black', secondary: color, pattern: 'solid', graphic: 'emblem', emblem: 'logo', text: '', font: 'chrome', material: 'standard', vibe: 'y2k' }}
             logo={{ glyph, color }}
             size={240}
           />

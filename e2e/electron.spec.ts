@@ -31,5 +31,5 @@ test('desktop program starts, plays and autosaves on close', async () => {
   expect(fs.existsSync(path.join(saveDir, 'auto.json'))).toBe(true);
   const saved = JSON.parse(fs.readFileSync(path.join(saveDir, 'auto.json'), 'utf8'));
   expect(saved.meta.brand).toBe('DESKTOP');
-  expect(saved.game.version).toBe(1);
+  expect(saved.game.version).toBe(2);
 });

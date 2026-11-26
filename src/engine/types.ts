@@ -9,6 +9,12 @@ export type ColorId = string;
 export type EmblemId = string;
 export type Season = 'Spring' | 'Summer' | 'Fall' | 'Winter';
 export type Speed = 0 | 1 | 2 | 4;
+export type VibeId = 'y2k' | 'gorpcore' | 'techwear' | 'grunge' | 'skate' | 'luxury' | 'cyber' | 'retro';
+export type TrendCategory = 'color' | 'pattern' | 'garment' | 'vibe';
+export type RoleId = 'designer' | 'marketer' | 'sourcer' | 'manager' | 'analyst';
+export type TraitId = 'perfectionist' | 'hypebeast' | 'loyal' | 'diva' | 'chill';
+export type PlatformId = 'loopz' | 'glint';
+export type PostKind = 'fit' | 'bts' | 'meme' | 'teaser';
 
 export interface LogoChoice {
   glyph: EmblemId;
@@ -26,6 +32,7 @@ export interface DesignInput {
   font: FontId;
   emblem: EmblemId;
   material: MaterialId;
+  vibe: VibeId;
 }
 
 export interface Design extends DesignInput {
@@ -86,6 +93,63 @@ export interface Drop {
   result: DropResult | null;
 }
 
+export interface TrendValue {
+  pop: number;
+  vel: number;
+  /** weeks spent at/near the peak */
+  peakWeeks: number;
+}
+
+export interface Ignition {
+  cat: TrendCategory;
+  id: string;
+  week: number;
+  vel: number;
+}
+
+export interface TrendState {
+  values: Record<TrendCategory, Record<string, TrendValue>>;
+  /** future trend starts, generated ahead so research can reveal them */
+  upcoming: Ignition[];
+  /** last week's popularity, for ↑/↓ arrows */
+  last: Record<TrendCategory, Record<string, number>>;
+  reportUntilDay: number;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  role: RoleId;
+  skill: number;
+  salary: number;
+  mood: number;
+  trait: TraitId;
+  hiredDay: number;
+  lowMoodWeeks: number;
+  lastPerk: number;
+}
+
+export interface Boost {
+  kind: 'visitors' | 'followersDaily';
+  mult: number;
+  untilDay: number;
+  source: string;
+}
+
+export interface Collab {
+  artistId: string;
+  signedDay: number;
+  /** consumed by the next drop */
+  used: boolean;
+}
+
+export interface PendingEvent {
+  id: string;
+  defId: string;
+  day: number;
+  params: Record<string, string | number>;
+}
+
 export interface GameStats {
   unitsSold: number;
   revenue: number;
@@ -99,7 +163,7 @@ export interface GameStats {
 }
 
 export interface GameState {
-  version: 1;
+  version: 2;
   seed: number;
   rngState: number;
   day: number;
@@ -121,6 +185,18 @@ export interface GameState {
   stats: GameStats;
   flags: Record<string, boolean>;
   nextId: number;
+  // ---- stage 2 ----
+  trends: TrendState;
+  employees: Employee[];
+  candidates: Employee[];
+  posts: { day: number; count: number };
+  boosts: Boost[];
+  influencerCampaign: { influencerId: string; untilDay: number } | null;
+  collab: Collab | null;
+  pendingEvents: PendingEvent[];
+  lastEventDay: number;
+  lastTeamNight: number;
+  supplierDiscountUntil: number;
 }
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; reason: string };
@@ -134,9 +210,15 @@ export type GameEvent =
   | { type: 'scandal'; factoryId: FactoryId; repLoss: number }
   | { type: 'dropResult'; dropId: string; designId: string; result: DropResult }
   | { type: 'dropPostponed'; dropId: string; designId: string; newDay: number }
-  | { type: 'bills'; total: number; rent: number; platform: number; storage: number }
+  | { type: 'bills'; total: number; rent: number; platform: number; storage: number; salaries: number }
   | { type: 'overdrawn'; graceDays: number }
   | { type: 'recovered' }
   | { type: 'bankrupt' }
   | { type: 'newWeek'; week: number }
-  | { type: 'newSeason'; season: Season };
+  | { type: 'newSeason'; season: Season }
+  | { type: 'eventStarted'; defId: string }
+  | { type: 'viral'; followers: number }
+  | { type: 'staffWarning'; employeeId: string; name: string }
+  | { type: 'staffQuit'; name: string; role: RoleId }
+  | { type: 'trendShift'; text: string }
+  | { type: 'boostEnded'; source: string };

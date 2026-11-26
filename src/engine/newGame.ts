@@ -1,5 +1,7 @@
 import { DIFFICULTIES, ECON } from './content';
 import { seedFromString } from './rng';
+import { initTrends } from './trends';
+import { refreshCandidates } from './team';
 import type { DifficultyId, GameState, LogoChoice } from './types';
 
 export interface NewGameOptions {
@@ -23,8 +25,8 @@ export function createNewGame(opts: NewGameOptions): GameState {
   if (!diff) throw new Error('Unknown difficulty');
   const name = opts.brandName.trim();
   const seed = (opts.seed ?? seedFromString(name + ':' + Date.now())) >>> 0;
-  return {
-    version: 1,
+  const state: GameState = {
+    version: 2,
     seed,
     rngState: seedFromString(`rng:${seed}`),
     day: 1,
@@ -56,6 +58,30 @@ export function createNewGame(opts: NewGameOptions): GameState {
     },
     flags: {},
     nextId: 1,
+    ...stage2Defaults(),
+  };
+  state.trends = initTrends(state);
+  refreshCandidates(state);
+  return state;
+}
+
+/** Fresh stage 2 fields (trends/candidates are filled in by the caller). */
+export function stage2Defaults(): Pick<
+  GameState,
+  'trends' | 'employees' | 'candidates' | 'posts' | 'boosts' | 'influencerCampaign' | 'collab' | 'pendingEvents' | 'lastEventDay' | 'lastTeamNight' | 'supplierDiscountUntil'
+> {
+  return {
+    trends: { values: { color: {}, pattern: {}, garment: {}, vibe: {} }, upcoming: [], last: { color: {}, pattern: {}, garment: {}, vibe: {} }, reportUntilDay: 0 },
+    employees: [],
+    candidates: [],
+    posts: { day: 0, count: 0 },
+    boosts: [],
+    influencerCampaign: null,
+    collab: null,
+    pendingEvents: [],
+    lastEventDay: 0,
+    lastTeamNight: -999,
+    supplierDiscountUntil: 0,
   };
 }
 

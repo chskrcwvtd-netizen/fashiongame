@@ -17,6 +17,7 @@ export const HOODIE: DesignInput = {
   font: 'chrome',
   emblem: 'skull',
   material: 'standard',
+  vibe: 'y2k',
 };
 
 export function withDesign(state: GameState, input: Partial<DesignInput> = {}) {

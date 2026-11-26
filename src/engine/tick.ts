@@ -4,6 +4,10 @@ import { processDrops } from './drops';
 import { chargeWeeklyBills, updateSolvency } from './finance';
 import { processProduction } from './production';
 import { growthRoom, simulateWebshopDay } from './webshop';
+import { maybeTriggerEvent } from './events';
+import { processMarketing } from './marketing';
+import { weeklyTeam } from './team';
+import { weeklyTrendUpdate } from './trends';
 import type { GameEvent, GameState } from './types';
 
 /** Advance the simulation by one in-game day. Returns what happened. */
@@ -25,11 +29,17 @@ export function advanceDay(state: GameState): GameEvent[] {
     if (date.weekOfSeason === 1) events.push({ type: 'newSeason', season: date.season });
   }
 
+  processMarketing(state, events);
+  if (newWeek) {
+    weeklyTrendUpdate(state, events);
+    weeklyTeam(state, events);
+  }
   processProduction(state, events);
   processDrops(state, events);
   simulateWebshopDay(state, events);
   if (newWeek) chargeWeeklyBills(state, events);
   updateSolvency(state, events);
+  if (!state.gameOver) maybeTriggerEvent(state, events);
 
   // Buzz cools off; the audience grows a little on its own.
   state.hype += (ECON.hypeBaseline - state.hype) * ECON.hypeDecay;

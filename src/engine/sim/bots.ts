@@ -6,6 +6,9 @@ import { freeCapacity, incomingUnits, placeOrder } from '../production';
 import { availableUnits, expectedDailySales, setListing } from '../webshop';
 import { upgradeCost, upgradeHQ } from '../hq';
 import { advanceDay } from '../tick';
+import { currentEvent, defaultOption, resolveEvent } from '../events';
+import { postSocial, postsLeft } from '../marketing';
+import { hire, staffSlots } from '../team';
 import type { DesignInput, DifficultyId, GameState } from '../types';
 
 export type Strategy = 'smart' | 'sloppy' | 'reckless' | 'idle';
@@ -25,7 +28,7 @@ export interface BotResult {
 }
 
 const base: Omit<DesignInput, 'garment' | 'name'> = {
-  primary: 'black', secondary: 'lime', pattern: 'grid', graphic: 'emblem', text: '', font: 'chrome', emblem: 'skull', material: 'standard',
+  primary: 'black', secondary: 'lime', pattern: 'grid', graphic: 'emblem', text: '', font: 'chrome', emblem: 'skull', material: 'standard', vibe: 'y2k',
 };
 
 function smartDay(s: GameState) {
@@ -69,6 +72,15 @@ function smartDay(s: GameState) {
   }
   const up = upgradeCost(s);
   if (up !== null && s.cash > up * 1.8) upgradeHQ(s);
+  // stage 2: post every day, staff up once there is room and money
+  while (!process.env.NOPOST && postsLeft(s) > 0) {
+    if (!postSocial(s, { platform: 'loopz', kind: 'fit', designId: focus[0].id }).ok) break;
+  }
+  if (!process.env.NOHIRE && s.hqLevel >= 1 && s.employees.length < Math.min(3, staffSlots(s)) && s.cash > 15000) {
+    const want = ['designer', 'sourcer', 'marketer'].find((r) => !s.employees.some((e) => e.role === r));
+    const c = s.candidates.find((x) => x.role === want) ?? null;
+    if (c) hire(s, c.id);
+  }
 }
 
 function recklessDay(s: GameState) {
@@ -108,6 +120,7 @@ export function runBot(difficulty: DifficultyId, strategy: Strategy, days: numbe
   let studioDay: number | null = null;
   let flagshipDay: number | null = null;
   for (let i = 0; i < days && !s.gameOver; i++) {
+    while (currentEvent(s)) resolveEvent(s, defaultOption(s));
     if (strategy === 'smart') smartDay(s);
     else if (strategy === 'reckless') recklessDay(s);
     else if (strategy === 'sloppy') sloppyDay(s);

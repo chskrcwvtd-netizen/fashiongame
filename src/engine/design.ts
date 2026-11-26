@@ -1,4 +1,6 @@
-import { COLORS, DIFFICULTIES, EMBLEMS, FACTORIES, GARMENTS, GRAPHIC_TASTE, MATERIALS, PATTERNS } from './content';
+import { COLORS, DIFFICULTIES, EMBLEMS, FACTORIES, GARMENTS, GRAPHIC_TASTE, MATERIALS, PATTERNS, PATTERN_VIBE, VIBES } from './content';
+import { designerFitBonus, designerQualityBonus, sourcerCostMult } from './team';
+import { trendPop } from './trends';
 import { dateInfo } from './calendar';
 import { newId } from './newGame';
 import type { Design, DesignInput, FactoryId, GameState } from './types';
@@ -10,6 +12,7 @@ export function sanitizeDesignInput(input: DesignInput): DesignInput {
     ...input,
     name: (input.name || '').trim().slice(0, 32) || `${GARMENTS[input.garment].name.toUpperCase()}`,
     text: (input.text || '').slice(0, 16),
+    vibe: input.vibe && VIBES[input.vibe] ? input.vibe : PATTERN_VIBE[input.pattern] ?? 'y2k',
   };
 }
 
@@ -24,25 +27,35 @@ export function getDesign(state: GameState, id: string): Design | undefined {
   return state.designs.find((d) => d.id === id);
 }
 
-export function designQuality(design: Pick<Design, 'material'>, factoryId: FactoryId): number {
-  return clamp(MATERIALS[design.material].quality + FACTORIES[factoryId].qualityMod, 0, 100);
+/** Batch quality: fabric + factory, plus your best designer when `state` is given. */
+export function designQuality(design: Pick<Design, 'material'>, factoryId: FactoryId, state?: GameState): number {
+  const staff = state ? designerQualityBonus(state) : 0;
+  return clamp(MATERIALS[design.material].quality + FACTORIES[factoryId].qualityMod + staff, 0, 100);
 }
 
 export function unitCost(state: GameState, design: Pick<Design, 'garment' | 'material'>, factoryId: FactoryId): number {
   const g = GARMENTS[design.garment];
-  return g.baseCost * MATERIALS[design.material].costMult * FACTORIES[factoryId].costMult * DIFFICULTIES[state.difficulty].costMult;
+  const deal = state.supplierDiscountUntil > state.day ? 0.7 : 1;
+  return g.baseCost * MATERIALS[design.material].costMult * FACTORIES[factoryId].costMult * DIFFICULTIES[state.difficulty].costMult * sourcerCostMult(state) * deal;
 }
 
-/** 0..1 — how well the design matches current taste (static Budapest taste in stage 1). */
-export function marketFit(_state: GameState, design: DesignInput): number {
-  const garment = GARMENTS[design.garment].taste;
-  const primary = COLORS[design.primary]?.taste ?? 0.4;
-  const secondary = COLORS[design.secondary]?.taste ?? 0.4;
-  const pattern = PATTERNS[design.pattern]?.taste ?? 0.4;
+/** Blend of Budapest's steady taste (35%) and what is trending right now (65%). */
+function blend(taste: number, pop: number) {
+  return 0.35 * taste + 0.65 * Math.min(1, pop * 1.1);
+}
+
+/** 0..1 — how well the design matches what people want right now. */
+export function marketFit(state: GameState, design: DesignInput): number {
+  const garment = blend(GARMENTS[design.garment].taste, trendPop(state, 'garment', design.garment));
+  const primary = blend(COLORS[design.primary]?.taste ?? 0.4, trendPop(state, 'color', design.primary));
+  const secondary = blend(COLORS[design.secondary]?.taste ?? 0.4, trendPop(state, 'color', design.secondary));
+  const pattern = blend(PATTERNS[design.pattern]?.taste ?? 0.4, trendPop(state, 'pattern', design.pattern));
+  const vibeId = design.vibe ?? PATTERN_VIBE[design.pattern] ?? 'y2k';
+  const vibe = blend(VIBES[vibeId]?.taste ?? 0.4, trendPop(state, 'vibe', vibeId));
   let graphic = GRAPHIC_TASTE[design.graphic];
   if (design.graphic === 'emblem') graphic = (graphic + (EMBLEMS[design.emblem]?.taste ?? 0.5)) / 2;
   if (design.graphic === 'text' && design.text.trim().length === 0) graphic = GRAPHIC_TASTE.none;
-  const fit = 0.3 * garment + 0.3 * primary + 0.1 * secondary + 0.2 * pattern + 0.1 * graphic;
+  const fit = 0.24 * garment + 0.24 * primary + 0.08 * secondary + 0.17 * pattern + 0.17 * vibe + 0.1 * graphic + designerFitBonus(state);
   return clamp(fit, 0, 1);
 }
 
