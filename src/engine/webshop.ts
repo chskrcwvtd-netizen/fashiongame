@@ -3,6 +3,11 @@ import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './desig
 import { poisson } from './rng';
 import type { ActionResult, GameEvent, GameState } from './types';
 
+/** 1 → 0 as followers approach the market ceiling. */
+export function growthRoom(state: GameState): number {
+  return Math.max(0.02, 1 - state.followers / ECON.homeMarketCap);
+}
+
 /** Units of this design reserved for a scheduled drop. */
 export function reservedUnits(state: GameState, designId: string): number {
   return state.drops
@@ -99,7 +104,7 @@ export function simulateWebshopDay(state: GameState, events: GameEvent[]): void 
     const revenue = sold * l.price;
     recordSale(state, l.designId, sold, revenue, events);
     const a = appeal(state, design, lot.quality);
-    state.followers += Math.round(sold * ECON.followersPerSale * a);
+    state.followers += Math.round(sold * ECON.followersPerSale * a * growthRoom(state));
     // Reputation drifts toward the quality customers receive.
     const target = lot.quality * 0.8;
     state.reputation += (target - state.reputation) * 0.004 * Math.sqrt(sold);

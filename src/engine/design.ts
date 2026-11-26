@@ -62,7 +62,13 @@ export function appeal(state: GameState, design: DesignInput, quality: number): 
   return clamp((0.5 + quality / 100) * (0.4 + fit * 1.2), 0.2, 2);
 }
 
+/**
+ * Demand multiplier from price vs fair price. Under fair: gentle boost.
+ * Over fair: steep drop — nobody pays 2x for an unknown brand.
+ */
 export function priceFactor(fair: number, price: number, elasticity: number): number {
-  if (price <= 0) return 3;
-  return clamp(Math.pow(fair / price, elasticity), 0.01, 3);
+  if (price <= 0 || fair <= 0) return price <= 0 ? 3 : 0;
+  const r = price / fair;
+  if (r <= 1) return clamp(Math.pow(r, -elasticity * 0.8), 1, 3);
+  return clamp(Math.exp(-3.2 * Math.pow(r - 1, 1.3)), 0, 1);
 }

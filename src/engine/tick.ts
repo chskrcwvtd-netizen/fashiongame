@@ -3,7 +3,7 @@ import { dateInfo } from './calendar';
 import { processDrops } from './drops';
 import { chargeWeeklyBills, updateSolvency } from './finance';
 import { processProduction } from './production';
-import { simulateWebshopDay } from './webshop';
+import { growthRoom, simulateWebshopDay } from './webshop';
 import type { GameEvent, GameState } from './types';
 
 /** Advance the simulation by one in-game day. Returns what happened. */
@@ -33,7 +33,7 @@ export function advanceDay(state: GameState): GameEvent[] {
 
   // Buzz cools off; the audience grows a little on its own.
   state.hype += (ECON.hypeBaseline - state.hype) * ECON.hypeDecay;
-  state.followers += Math.round(state.followers * ECON.organicFollowerRate * (state.hype / 50));
+  state.followers += Math.round(state.followers * ECON.organicFollowerRate * (state.hype / 50) * growthRoom(state));
   state.stats.peakCash = Math.max(state.stats.peakCash, state.cash);
   return events;
 }

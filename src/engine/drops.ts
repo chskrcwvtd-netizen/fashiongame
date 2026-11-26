@@ -2,7 +2,7 @@ import { DIFFICULTIES, ECON, GARMENTS } from './content';
 import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './design';
 import { newId } from './newGame';
 import { randRange } from './rng';
-import { availableUnits, recordSale } from './webshop';
+import { availableUnits, growthRoom, recordSale } from './webshop';
 import type { ActionResult, Drop, DropResult, GameEvent, GameState } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -107,11 +107,11 @@ function resolveDrop(state: GameState, drop: Drop, events: GameEvent[]) {
   state.stats.dropsTotal += 1;
   if (outcome === 'soldout') {
     state.stats.dropsSoldOut += 1;
-    state.followers += Math.round(drop.units * 1.2 + state.followers * 0.06 * Math.min(ratio, 3));
+    state.followers += Math.round((drop.units * 0.8 + state.followers * 0.012 * Math.min(ratio, 2.5)) * growthRoom(state));
     state.hype = clamp(state.hype + 15, 0, 100);
     state.reputation = clamp(state.reputation + 3, 0, 100);
   } else if (outcome === 'solid') {
-    state.followers += Math.round(sold * 0.6);
+    state.followers += Math.round(sold * 0.4 * growthRoom(state));
     state.hype = clamp(state.hype + 5, 0, 100);
     state.reputation = clamp(state.reputation + 1, 0, 100);
   } else {
