@@ -55,6 +55,8 @@ export class GameStore {
   toasts: Toast[] = [];
   splash: Splash | null = null;
   lastSavedAt: number | null = null;
+  /** design picked in one screen and carried to the next (Lab → Factories → Drops) */
+  selectedDesignId: string | null = null;
   private version = 0;
   private listeners = new Set<() => void>();
   private nextFeedId = 1;
@@ -111,8 +113,9 @@ export class GameStore {
     this.bump();
   }
 
-  setPanel(p: Panel) {
+  setPanel(p: Panel, designId?: string) {
     this.panel = p;
+    if (designId) this.selectedDesignId = designId;
     this.bump();
   }
 
