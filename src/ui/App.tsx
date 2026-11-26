@@ -11,6 +11,10 @@ import { ProductionPanel } from './game/ProductionPanel';
 import { ShopPanel } from './game/ShopPanel';
 import { DropsPanel } from './game/DropsPanel';
 import { DropSplash, GameMenu, GameOver } from './game/Overlays';
+import { TrendsPanel } from './game/TrendsPanel';
+import { MarketingPanel } from './game/MarketingPanel';
+import { TeamPanel } from './game/TeamPanel';
+import { EventModal } from './game/EventModal';
 
 function GameScreen() {
   const store = useStore();
@@ -66,10 +70,14 @@ function GameScreen() {
         {store.panel === 'production' && <ProductionPanel />}
         {store.panel === 'shop' && <ShopPanel />}
         {store.panel === 'drops' && <DropsPanel />}
+        {store.panel === 'trends' && <TrendsPanel />}
+        {store.panel === 'marketing' && <MarketingPanel />}
+        {store.panel === 'team' && <TeamPanel />}
       </main>
       <Feed />
       <Toasts />
       <DropSplash />
+      <EventModal />
       <GameOver />
       {menu && <GameMenu onClose={closeMenu} />}
     </div>

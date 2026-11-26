@@ -235,6 +235,14 @@ export function HQScene({ state, queue }: Props) {
         </g>
       )}
 
+      {/* the team at work */}
+      {state.employees.slice(0, 8).map((e, i) => {
+        const spots = level === 0 ? [[660, 470], [740, 480]] : level === 1 ? [[600, 460], [700, 470], [780, 455], [200, 470], [860, 480]] : [[330, 470], [440, 480], [540, 465], [250, 485], [760, 480], [820, 470], [880, 485], [210, 470]];
+        const [x, y] = spots[i % spots.length];
+        const color = { designer: '#ff3ec8', marketer: '#d4ff3a', sourcer: '#6cf2ff', manager: '#ffc24a', analyst: '#a98bff' }[e.role];
+        return <Person key={e.id} x={x} y={y} color={color} delay={i * 0.31} scale={0.9} />;
+      })}
+
       {/* the queue on drop day */}
       {Array.from({ length: queue }).map((_, i) => (
         <Person

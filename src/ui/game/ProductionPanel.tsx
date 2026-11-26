@@ -110,7 +110,7 @@ export function ProductionPanel() {
                   Risk <Dots n={r.risk} tone="red" />
                 </span>
                 <span className="factory-foot">
-                  {money(unitCost(s, design, id))} each, quality {designQuality(design, id)}, {fd.leadDays} days, min {fd.minOrder}
+                  {money(unitCost(s, design, id))} each, quality {designQuality(design, id, s)}, {fd.leadDays} days, min {fd.minOrder}
                 </span>
               </button>
             );

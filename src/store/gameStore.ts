@@ -4,6 +4,9 @@ import {
   deserialize,
   getDesign,
   serialize,
+  eventDef,
+  resolveEvent,
+  currentEvent,
   FACTORIES,
   type ActionResult,
   type DropResult,
@@ -17,7 +20,7 @@ import type { SfxName } from '../audio/sfx';
 
 export const MS_PER_DAY_1X = 2000;
 
-export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops';
+export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team';
 export type Phase = 'menu' | 'game';
 export type Tone = 'money' | 'good' | 'bad' | 'info';
 
@@ -57,6 +60,8 @@ export class GameStore {
   lastSavedAt: number | null = null;
   /** design picked in one screen and carried to the next (Lab → Factories → Drops) */
   selectedDesignId: string | null = null;
+  /** outcome text of the event the player just decided, shown before the modal closes */
+  eventOutcome: { title: string; text: string } | null = null;
   private version = 0;
   private listeners = new Set<() => void>();
   private nextFeedId = 1;
@@ -126,6 +131,7 @@ export class GameStore {
 
   get effectiveSpeed(): Speed {
     if (this.phase !== 'game' || !this.state || this.state.gameOver || this.splash) return 0;
+    if (this.state.pendingEvents.length > 0 || this.eventOutcome) return 0;
     return this.speed;
   }
 
@@ -190,6 +196,31 @@ export class GameStore {
     return out;
   }
 
+  /** Choose an option in the current decision event. */
+  chooseEventOption(index: number) {
+    const s = this.state;
+    if (!s) return;
+    const pe = currentEvent(s);
+    if (!pe) return;
+    const def = eventDef(pe.defId);
+    const title = def ? def.title(s, pe.params) : 'Decision';
+    const r = resolveEvent(s, index);
+    if (!r.ok) {
+      this.sound.play('error');
+      this.toast(r.reason, undefined, 'bad');
+    } else {
+      this.sound.play('click');
+      this.eventOutcome = { title, text: r.text };
+      this.pushFeed(`${title}: ${r.text}`, def?.tone === 'bad' ? 'bad' : 'good');
+    }
+    this.bump();
+  }
+
+  dismissEventOutcome() {
+    this.eventOutcome = null;
+    this.bump();
+  }
+
   dismissSplash() {
     this.splash = null;
     this.bump();
@@ -239,19 +270,37 @@ export class GameStore {
           this.sound.play('arrived');
           break;
         case 'defect':
-          this.pushFeed(`Factory botched ${e.lost} units of ${this.designName(e.designId)}. Written off.`, 'bad');
-          this.toast('Defective units', `${e.lost} pieces of ${this.designName(e.designId)} were unusable.`, 'bad');
-          this.sound.play('error');
-          break;
+          break; // the decision event explains it
         case 'delay':
           this.pushFeed(`${this.designName(e.designId)} is running ${e.days} days late.`, 'bad');
           this.toast('Factory delay', `${this.designName(e.designId)} arrives ${e.days} days late.`, 'bad');
           this.sound.play('notify');
           break;
         case 'scandal':
-          this.pushFeed(`Exposé: ${FACTORIES[e.factoryId].name} working conditions. Reputation −${e.repLoss}.`, 'bad');
-          this.toast('Scandal!', `A blog exposed ${FACTORIES[e.factoryId].name}. People are asking who makes your clothes.`, 'bad');
-          this.sound.play('scandal');
+          this.pushFeed(`Exposé about ${FACTORIES[e.factoryId].name} working conditions.`, 'bad');
+          break;
+        case 'eventStarted': {
+          const def = eventDef(e.defId);
+          this.sound.play(def?.tone === 'bad' ? 'scandal' : 'event');
+          break;
+        }
+        case 'viral':
+          break;
+        case 'staffWarning':
+          this.toast(`${e.name} is unhappy`, 'Check the Team screen before they walk out.', 'bad');
+          this.pushFeed(`${e.name} is really unhappy.`, 'bad');
+          this.sound.play('notify');
+          break;
+        case 'staffQuit':
+          this.toast(`${e.name} quit`, 'Their desk is empty.', 'bad');
+          this.pushFeed(`${e.name} quit.`, 'bad');
+          this.sound.play('flop');
+          break;
+        case 'trendShift':
+          this.pushFeed(e.text, 'info');
+          break;
+        case 'boostEnded':
+          this.pushFeed(`${e.source} campaign ended.`, 'info');
           break;
         case 'dropResult': {
           const name = this.designName(e.designId);
@@ -267,7 +316,7 @@ export class GameStore {
           this.sound.play('error');
           break;
         case 'bills':
-          this.pushFeed(`Weekly bills: −${money(e.total)}`, 'info');
+          this.pushFeed(`Weekly bills: −${money(e.total)}${e.salaries ? ` (salaries ${money(e.salaries)})` : ''}`, 'info');
           break;
         case 'overdrawn':
           this.toast('You are overdrawn!', `Get back above $0 within ${e.graceDays} days or the brand goes bankrupt.`, 'bad');

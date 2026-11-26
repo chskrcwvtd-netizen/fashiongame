@@ -9,9 +9,13 @@ const ITEMS: { id: Panel; label: string; icon: string }[] = [
   { id: 'production', label: 'Factories', icon: 'M2 21V10l6 4V10l6 4V4h4v17zM17 7h0' },
   { id: 'shop', label: 'Webshop', icon: 'M4 7h16l-1.5 12h-13zM8 7a4 4 0 0 1 8 0' },
   { id: 'drops', label: 'Drops', icon: 'M13 2L4 14h7l-1 8 9-12h-7z' },
+  { id: 'trends', label: 'Trends', icon: 'M3 17l6-6 4 4 8-8M15 7h6v6' },
+  { id: 'marketing', label: 'Marketing', icon: 'M3 10v4h3l6 5V5L6 10zM16 8a5 5 0 0 1 0 8M18.5 5a9 9 0 0 1 0 14' },
+  { id: 'team', label: 'Team', icon: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM1 21c0-4 4-7 8-7s8 3 8 7zM17 11a3 3 0 1 0 0-6M19 14c2 1 4 3 4 7h-4' },
 ];
 
-const LOCKED = ['Marketing', 'Team', 'Trends'];
+const LOCKED = ['Rivals', 'Wholesale', 'World'];
+const STROKE = new Set<Panel>(['trends', 'marketing', 'team']);
 
 export function NavRail() {
   const { store, s } = useGame();
@@ -31,11 +35,16 @@ export function NavRail() {
           data-testid={`nav-${it.id}`}
         >
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-            <path d={it.icon} fill="currentColor" />
+            {STROKE.has(it.id) ? (
+              <path d={it.icon} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              <path d={it.icon} fill="currentColor" />
+            )}
           </svg>
           <span>{it.label}</span>
           {it.id === 'drops' && drop && <i className="rail-badge">{Math.max(0, drop.dropDay - s.day)}d</i>}
           {it.id === 'production' && shipping > 0 && <i className="rail-badge">{shipping}</i>}
+          {it.id === 'team' && s.employees.some((e) => e.mood < 35) && <i className="rail-badge warn">!</i>}
         </button>
       ))}
       <div className="rail-sep" />

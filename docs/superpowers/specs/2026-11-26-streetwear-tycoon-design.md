@@ -432,3 +432,11 @@ of factories/brands/people, sound design details, how locked screens are
 teased, onboarding hints for the first minutes (a short "first steps"
 checklist is expected), window size (default 1600×900, resizable, minimum
 1280×720, fullscreen toggle).
+
+## 12. Stage 2 builder's calls (2026-11-26)
+
+- Posting is free, limited to 1 post a day (+1 per marketer, max 3); posts give small growth, rare viral spikes.
+- Trend research: a report ($1,500) shows 6 weeks ahead for 6 weeks; a Trend Analyst shows 2–5 weeks ahead permanently. Current popularity and last week's movement are always visible; hot/rising options are outlined in the Design Lab.
+- Random decision events arrive roughly every 18 in-game days (about 35 s at 1x); time pauses until you choose.
+- Four job candidates (four different roles) every Monday; desks: Basement 2, Studio 5, Flagship 10.
+- An artist collab powers up the next drop and takes 15% of that drop's revenue.

@@ -33,7 +33,11 @@ export function makeCandidate(state: GameState, role?: RoleId): Employee {
 }
 
 export function refreshCandidates(state: GameState): void {
-  state.candidates = [makeCandidate(state), makeCandidate(state), makeCandidate(state), makeCandidate(state)];
+  // four different roles each week, in random order
+  const roles = [...ROLE_IDS];
+  const picked: RoleId[] = [];
+  while (picked.length < 4) picked.push(roles.splice(randInt(state, 0, roles.length - 1), 1)[0]);
+  state.candidates = picked.map((r) => makeCandidate(state, r));
 }
 
 export function hire(state: GameState, candidateId: string): ActionResult {

@@ -51,7 +51,7 @@ export function postSocial(state: GameState, input: PostInput): PostResult {
   if (input.kind === 'meme') mult *= 0.7;
   if (input.kind === 'bts') mult *= 0.6;
   if (input.kind === 'teaser') mult *= 0.5;
-  let gained = Math.round((1 + Math.sqrt(state.followers) * 0.1) * mult * room(state));
+  let gained = Math.round((1 + Math.sqrt(state.followers) * 0.07) * mult * room(state));
   let viral = false;
   let backfired = false;
   let text: string;
@@ -64,8 +64,8 @@ export function postSocial(state: GameState, input: PostInput): PostResult {
     text = 'The meme aged badly in about four minutes. People are dunking on you.';
   } else if (chance(state, viralChance(state, input))) {
     viral = true;
-    gained += Math.round((state.followers * randRange(state, 0.02, 0.06) + 80) * room(state));
-    state.hype = clamp(state.hype + 12, 0, 100);
+    gained += Math.round((state.followers * randRange(state, 0.015, 0.04) + 60) * room(state));
+    state.hype = clamp(state.hype + 8, 0, 100);
     text = `It went viral on ${platform.name}. Your phone will not stop buzzing.`;
   } else {
     text = `Posted on ${platform.name}. Solid engagement.`;

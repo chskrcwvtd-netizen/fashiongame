@@ -15,6 +15,20 @@ async function startGame(page: Page, name = 'E2E CLUB') {
   await page.getByTestId('difficulty-normal').click();
   await page.getByTestId('start-game').click();
   await expect(page.getByTestId('game')).toBeVisible();
+  // keep random events out of scripted runs; factory problems are handled by settle()
+  await page.evaluate(() => {
+    (window as unknown as W).__store.state.lastEventDay = 1e9;
+  });
+}
+
+/** If a decision event popped up, take the first option and close it. */
+async function settle(page: Page) {
+  for (let i = 0; i < 3; i++) {
+    if (await page.getByTestId('event-modal').isVisible()) {
+      await page.locator('[data-testid^=event-option-]:not([disabled])').first().click();
+      await page.getByTestId('event-ok').click();
+    } else return;
+  }
 }
 
 test('a full short round: design, produce, sell, drop, save, reload', async ({ page }) => {
@@ -46,7 +60,16 @@ test('a full short round: design, produce, sell, drop, save, reload', async ({ p
 
   // Fast-forward until the shipment lands
   await page.getByTestId('speed-4').click();
-  await expect.poll(async () => (await state(page))!.stock, { timeout: 20_000 }).toBeGreaterThan(0);
+  await expect
+    .poll(
+      async () => {
+        await settle(page);
+        return (await state(page))!.stock;
+      },
+      { timeout: 20_000 },
+    )
+    .toBeGreaterThan(0);
+  await settle(page);
 
   // Webshop
   await page.getByTestId('nav-shop').click();
@@ -60,7 +83,15 @@ test('a full short round: design, produce, sell, drop, save, reload', async ({ p
   await page.getByTestId('announce-drop').click();
   await expect(page.getByTestId('drop-live')).toBeVisible();
   await page.getByTestId('post-teaser').click();
-  await expect(page.getByTestId('drop-splash')).toBeVisible({ timeout: 20_000 });
+  await expect
+    .poll(
+      async () => {
+        await settle(page);
+        return page.getByTestId('drop-splash').isVisible();
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
   await page.screenshot({ path: 'test-results/playthrough-splash.png' });
   await page.getByTestId('splash-continue').click();
   await expect(page.getByTestId('feed')).toContainText('Drop:');
@@ -124,4 +155,52 @@ test('refuses impossible orders with a readable reason', async ({ page }) => {
   expect(qty).toBeLessThan(500);
   await page.getByTestId('place-order').click();
   expect((await state(page))!.cash).toBeGreaterThanOrEqual(0);
+});
+
+test('stage 2: hire, post, research trends and decide an event', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await startGame(page, 'STAGE TWO');
+  await page.getByTestId('speed-0').click();
+
+  // a design with a vibe
+  await page.getByTestId('nav-lab').click();
+  await page.getByTestId('vibe-techwear').click();
+  await page.getByTestId('save-design').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.designs[0].vibe)).toBe('techwear');
+
+  // hire someone
+  await page.getByTestId('nav-team').click();
+  await page.locator('[data-testid^=hire-]').first().click();
+  await expect(page.locator('.staff')).toHaveCount(1);
+
+  // post
+  await page.getByTestId('nav-marketing').click();
+  const before = await page.evaluate(() => (window as unknown as W).__store.state.followers);
+  await page.getByTestId('post-now').click();
+  await expect(page.locator('.post-result')).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.followers)).toBeGreaterThanOrEqual(before);
+
+  // trends research
+  await page.getByTestId('nav-trends').click();
+  await page.getByTestId('buy-report').click();
+  await expect(page.getByTestId('coming-trends')).toBeVisible();
+
+  // an event pauses the game and needs a decision
+  await page.getByTestId('speed-1').click();
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    st.state.pendingEvents.push({ id: 'vx', defId: 'blog_feature', day: st.state.day, params: {} });
+    st.bump();
+  });
+  await expect(page.getByTestId('event-modal')).toBeVisible();
+  const day = (await state(page))!.day;
+  await page.waitForTimeout(2500);
+  expect((await state(page))!.day).toBe(day); // paused while deciding
+  await page.getByTestId('event-option-1').click();
+  await expect(page.getByTestId('event-outcome')).toBeVisible();
+  await page.getByTestId('event-ok').click();
+  await expect(page.getByTestId('feed')).toContainText('A fashion blog wants you');
+  await page.screenshot({ path: 'test-results/stage2-hq.png' });
+  expect(errors).toEqual([]);
 });

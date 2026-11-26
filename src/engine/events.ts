@@ -74,7 +74,7 @@ export const EVENTS: EventDef[] = [
         blocked: needCash((s) => 600 * cm(s)),
         apply: (s) => {
           pay(s, 600 * cm(s));
-          const g = Math.round((s.followers * 0.15 + 150) * room(s));
+          const g = Math.round((s.followers * 0.06 + 150) * room(s));
           s.followers += g;
           s.hype = clamp(s.hype + 15, 0, 100);
           return `The ads hit. +${g.toLocaleString('en-US')} followers.`;
@@ -95,7 +95,7 @@ export const EVENTS: EventDef[] = [
         hint: 'Small reputation gain',
         apply: (s) => {
           s.reputation = clamp(s.reputation + 3, 0, 100);
-          const g = Math.round(s.followers * 0.05 * room(s));
+          const g = Math.round(s.followers * 0.02 * room(s));
           s.followers += g;
           return `A thank-you repost. Classy. +${g} followers.`;
         },
@@ -443,7 +443,7 @@ export const EVENTS: EventDef[] = [
         blocked: needCash((s) => 1200 * cm(s)),
         apply: (s) => {
           pay(s, 1200 * cm(s));
-          const g = Math.round((s.followers * 0.06 + 300) * room(s));
+          const g = Math.round((s.followers * 0.03 + 200) * room(s));
           s.followers += g;
           s.reputation = clamp(s.reputation + 2, 0, 100);
           return `Cover story. +${g} followers.`;

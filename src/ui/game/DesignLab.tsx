@@ -14,6 +14,11 @@ import {
   MATERIAL_IDS,
   PATTERNS,
   PATTERN_IDS,
+  VIBES,
+  VIBE_IDS,
+  trendDelta,
+  trendPop,
+  type TrendCategory,
   createDesign,
   designQuality,
   fairPrice,
@@ -51,10 +56,17 @@ const GARMENT_ICONS: Record<string, string> = {
   beanie: 'M4 18C4 9 7 5 12 5s8 4 8 13zM3 15h18v5H3zM12 1a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
 };
 
-function Chip<T extends string>({ value, current, onPick, children, testid, title }: { value: T; current: T; onPick: (v: T) => void; children: React.ReactNode; testid?: string; title?: string }) {
+/** 'hot' / 'rising' marker class from public trend data. */
+function heatClass(s: Parameters<typeof trendPop>[0], cat: TrendCategory, id: string) {
+  if (trendPop(s, cat, id) > 0.75) return 'is-hot';
+  if (trendDelta(s, cat, id) > 0.03) return 'is-rising';
+  return '';
+}
+
+function Chip<T extends string>({ value, current, onPick, children, testid, title, heat }: { value: T; current: T; onPick: (v: T) => void; children: React.ReactNode; testid?: string; title?: string; heat?: string }) {
   return (
     <button
-      className={`chip ${value === current ? 'on' : ''}`}
+      className={`chip ${value === current ? 'on' : ''} ${heat ?? ''}`}
       onClick={() => {
         sfx.play('click');
         onPick(value);
@@ -68,13 +80,13 @@ function Chip<T extends string>({ value, current, onPick, children, testid, titl
   );
 }
 
-function Swatches({ current, onPick, testid }: { current: string; onPick: (v: string) => void; testid: string }) {
+function Swatches({ current, onPick, testid, heat }: { current: string; onPick: (v: string) => void; testid: string; heat: (id: string) => string }) {
   return (
     <div className="swatches" data-testid={testid}>
       {COLOR_IDS.map((c) => (
         <button
           key={c}
-          className={`swatch ${c === current ? 'on' : ''}`}
+          className={`swatch ${c === current ? 'on' : ''} ${heat(c)}`}
           style={{ background: COLORS[c].hex }}
           title={COLORS[c].name}
           aria-label={COLORS[c].name}
@@ -93,11 +105,11 @@ export function DesignLab() {
   const { store, s } = useGame();
   const [draft, setDraft] = useState<DesignInput>(() => {
     const last = s.designs[s.designs.length - 1];
-    return last ? { ...last } : DEFAULT;
+    return last ? { ...DEFAULT, ...last } : DEFAULT;
   });
   const set = <K extends keyof DesignInput>(k: K, v: DesignInput[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const fit = marketFit(s, draft);
-  const qDanube = designQuality(draft, 'danube');
+  const qDanube = designQuality(draft, 'danube', s);
   const fair = fairPrice(s, draft, qDanube);
   const fitLabel = fit > 0.72 ? 'Budapest loves this' : fit > 0.6 ? 'Solid fit' : fit > 0.5 ? 'Niche' : 'Hard sell';
 
@@ -120,7 +132,7 @@ export function DesignLab() {
           <label>Piece</label>
           <div className="chips">
             {GARMENT_IDS.map((g) => (
-              <Chip key={g} value={g} current={draft.garment} onPick={(v) => setDraft((d) => ({ ...d, garment: v, name: d.name.replace(/(TEE|HOODIE|CARGO PANTS|PUFFER JACKET|CAP|BEANIE)$/, GARMENTS[v].name.toUpperCase()) }))} testid={`garment-${g}`}>
+              <Chip key={g} value={g} current={draft.garment} heat={heatClass(s, 'garment', g)} onPick={(v) => setDraft((d) => ({ ...d, garment: v, name: d.name.replace(/(TEE|HOODIE|CARGO PANTS|PUFFER JACKET|CAP|BEANIE)$/, GARMENTS[v].name.toUpperCase()) }))} testid={`garment-${g}`}>
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path d={GARMENT_ICONS[g]} fill="currentColor" />
                 </svg>
@@ -132,18 +144,18 @@ export function DesignLab() {
 
         <div className="field">
           <label>Main colour: {COLORS[draft.primary].name}</label>
-          <Swatches current={draft.primary} onPick={(v) => set('primary', v)} testid="primary-colors" />
+          <Swatches current={draft.primary} onPick={(v) => set('primary', v)} testid="primary-colors" heat={(c) => heatClass(s, 'color', c)} />
         </div>
         <div className="field">
           <label>Detail colour: {COLORS[draft.secondary].name}</label>
-          <Swatches current={draft.secondary} onPick={(v) => set('secondary', v)} testid="secondary-colors" />
+          <Swatches current={draft.secondary} onPick={(v) => set('secondary', v)} testid="secondary-colors" heat={(c) => heatClass(s, 'color', c)} />
         </div>
 
         <div className="field">
           <label>Pattern</label>
           <div className="chips">
             {PATTERN_IDS.map((p) => (
-              <Chip key={p} value={p} current={draft.pattern} onPick={(v) => set('pattern', v)} testid={`pattern-${p}`}>
+              <Chip key={p} value={p} current={draft.pattern} heat={heatClass(s, 'pattern', p)} onPick={(v) => set('pattern', v)} testid={`pattern-${p}`}>
                 {PATTERNS[p].name}
               </Chip>
             ))}
@@ -181,6 +193,20 @@ export function DesignLab() {
               ))}
             </div>
           )}
+        </div>
+
+        <div className="field">
+          <label>Vibe: {VIBES[draft.vibe].blurb}</label>
+          <div className="chips">
+            {VIBE_IDS.map((v) => (
+              <Chip key={v} value={v} current={draft.vibe} heat={heatClass(s, 'vibe', v)} onPick={(x) => set('vibe', x)} testid={`vibe-${v}`}>
+                {VIBES[v].name}
+              </Chip>
+            ))}
+          </div>
+          <span className="muted small heat-legend">
+            <i className="legend-hot" /> hot right now <i className="legend-rising" /> rising
+          </span>
         </div>
 
         <div className="field">
@@ -226,7 +252,7 @@ export function DesignLab() {
             </div>
             <strong>{fitLabel}</strong>
           </div>
-          <p className="muted small">How well these choices match what Budapest wears right now. Seasons matter too: puffers in winter, tees in summer.</p>
+          <p className="muted small">How well these choices match what people want right now. Trends move every week; check the Trends screen. Seasons matter too.</p>
         </section>
         <section className="card">
           <h3>Cost and quality by factory</h3>
@@ -236,7 +262,7 @@ export function DesignLab() {
                 <tr key={f}>
                   <td>{FACTORIES[f].name}</td>
                   <td>{money(unitCost(s, draft, f))} each</td>
-                  <td>quality {designQuality(draft, f)}</td>
+                  <td>quality {designQuality(draft, f, s)}</td>
                 </tr>
               ))}
             </tbody>
@@ -260,7 +286,7 @@ export function DesignLab() {
                   <div className="collection-meta">
                     <strong>{d.name}</strong>
                     <div className="collection-actions">
-                      <button className="link" onClick={() => setDraft({ ...d })}>
+                      <button className="link" onClick={() => setDraft({ ...DEFAULT, ...d })}>
                         Edit a copy
                       </button>
                       <button className="link" onClick={() => store.setPanel('production', d.id)} data-testid={`produce-${d.id}`}>

@@ -14,13 +14,16 @@ export type SfxName =
   | 'error'
   | 'scandal'
   | 'bankrupt'
-  | 'upgrade';
+  | 'upgrade'
+  | 'event'
+  | 'viral'
+  | 'hire';
 
-export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade'];
+export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade', 'event', 'viral', 'hire'];
 
 export const SFX_LENGTH: Record<SfxName, number> = {
   click: 0.12, hover: 0.05, cash: 0.9, arrived: 0.6, notify: 0.8, dropAnnounce: 1.4, soldout: 3.2,
-  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6,
+  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6, event: 1.0, viral: 2.0, hire: 0.9,
 };
 
 interface Bus {
@@ -292,6 +295,25 @@ export function scheduleSfx(ctx: BaseAudioContext, out: AudioNode, name: SfxName
       tone(bus, bus.crush, 'sawtooth', midi(81), t, { a: 0.02, hold: 0.3, d: 2.2, peak: 0.25 }, { toFreq: 30, glide: 2.4 });
       tone(bus, bus.crush, 'square', midi(69), t + 0.05, { a: 0.02, hold: 0.3, d: 2.2, peak: 0.12 }, { toFreq: 24, glide: 2.4, detune: 25 });
       eightOhEight(bus, bus.dry, t + 1.6, 70, 30, 1.2, 0.9);
+      break;
+    case 'event':
+      // attention: two quick detuned stabs + a bell
+      tone(bus, bus.crush, 'square', midi(74), t, { d: 0.08, peak: 0.18 }, { detune: 12 });
+      tone(bus, bus.crush, 'square', midi(81), t + 0.1, { d: 0.1, peak: 0.18 }, { detune: -12 });
+      bell(bus, bus.wet, midi(93), t + 0.2, 0.5, 0.25);
+      break;
+    case 'viral': {
+      noise(bus, bus.wet, t, { a: 0.4, d: 0.1, peak: 0.2 }, { type: 'bandpass', freq: 1000, toFreq: 12000, q: 3 });
+      const sparkle = [84, 88, 91, 96, 100, 103, 108];
+      sparkle.forEach((n, i) => bell(bus, bus.wet, midi(n), t + 0.35 + i * 0.05, 0.35, 0.2));
+      supersaw(bus, bus.crush, [midi(64), midi(71), midi(76)], t + 0.35, { a: 0.01, d: 1.0, peak: 0.3 }, [2000, 9000]);
+      eightOhEight(bus, bus.dry, t + 0.35, 140, 48, 0.5, 0.6);
+      break;
+    }
+    case 'hire':
+      bell(bus, bus.wet, midi(79), t, 0.3, 0.3);
+      bell(bus, bus.wet, midi(86), t + 0.08, 0.35, 0.3);
+      bell(bus, bus.wet, midi(91), t + 0.16, 0.5, 0.28);
       break;
     case 'upgrade': {
       const notes = [72, 76, 79, 84, 88, 91];
