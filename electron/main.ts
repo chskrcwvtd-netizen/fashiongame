@@ -1,0 +1,122 @@
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+const SLOTS = new Set(['auto', 'slot1', 'slot2', 'slot3']);
+
+function saveDir(): string {
+  const dir = process.env.STREETWEAR_SAVE_DIR || path.join(app.getPath('userData'), 'saves');
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+function slotPath(slot: unknown): string {
+  if (typeof slot !== 'string' || !SLOTS.has(slot)) throw new Error('Invalid save slot');
+  return path.join(saveDir(), `${slot}.json`);
+}
+
+/** Write via a temp file + rename so a crash never leaves half a save. */
+function writeAtomic(file: string, text: string) {
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, text, 'utf8');
+  if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
+  fs.renameSync(tmp, file);
+}
+
+function registerIpc() {
+  ipcMain.handle('save:read', (_e, slot) => {
+    const file = slotPath(slot);
+    return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
+  });
+  ipcMain.handle('save:write', (_e, slot, text) => {
+    if (typeof text !== 'string') throw new Error('Invalid save');
+    writeAtomic(slotPath(slot), text);
+  });
+  ipcMain.handle('save:remove', (_e, slot) => {
+    const file = slotPath(slot);
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+  });
+  ipcMain.on('save:writeSync', (e, slot, text) => {
+    try {
+      if (typeof text === 'string') writeAtomic(slotPath(slot), text);
+      e.returnValue = true;
+    } catch {
+      e.returnValue = false;
+    }
+  });
+  ipcMain.on('app:quit', () => app.quit());
+  ipcMain.on('app:fullscreen', (e) => {
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (win) win.setFullScreen(!win.isFullScreen());
+  });
+}
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1600,
+    height: 900,
+    minWidth: 1280,
+    minHeight: 720,
+    backgroundColor: '#08060f',
+    title: 'Streetwear Tycoon',
+    autoHideMenuBar: true,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  win.removeMenu();
+  // Ask the game to autosave before the window really closes (max 2 s wait).
+  let closeReady = false;
+  win.on('close', (e) => {
+    if (closeReady || win.webContents.isDestroyed()) return;
+    e.preventDefault();
+    const finish = () => {
+      if (closeReady) return;
+      closeReady = true;
+      ipcMain.removeListener('app:close-ready', onReady);
+      if (!win.isDestroyed()) win.close();
+    };
+    const onReady = (ev: Electron.IpcMainEvent) => {
+      if (ev.sender === win.webContents) finish();
+    };
+    ipcMain.on('app:close-ready', onReady);
+    win.webContents.send('app:before-close');
+    setTimeout(finish, 2000);
+  });
+  win.once('ready-to-show', () => win.show());
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      win.setFullScreen(!win.isFullScreen());
+      event.preventDefault();
+    }
+  });
+  // Never navigate away or open other windows.
+  win.webContents.on('will-navigate', (e) => e.preventDefault());
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  void win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
+  return win;
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    const [win] = BrowserWindow.getAllWindows();
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
+  });
+  app.whenReady().then(() => {
+    registerIpc();
+    createWindow();
+  });
+  app.on('window-all-closed', () => app.quit());
+}

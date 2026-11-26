@@ -28,7 +28,7 @@ interface Bridge {
 
 declare global {
   interface Window {
-    streetwear?: { saves: Bridge; quit(): void; toggleFullscreen(): void; isDesktop: true };
+    streetwear?: { saves: Bridge; quit(): void; toggleFullscreen(): void; onBeforeClose(cb: () => void): void; isDesktop: true };
   }
 }
 

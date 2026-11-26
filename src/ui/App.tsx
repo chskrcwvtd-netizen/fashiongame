@@ -40,6 +40,8 @@ function GameScreen() {
       if (menu) return;
       if (e.key === ' ') {
         e.preventDefault();
+        // A focused button would also be "pressed" by Space on key-up (e.g. a second order).
+        if (e.target instanceof HTMLElement && e.target.tagName === 'BUTTON') e.target.blur();
         if (store.speed === 0) store.setSpeed(resumeSpeed.current || 1);
         else {
           resumeSpeed.current = store.speed;
@@ -80,6 +82,7 @@ export function App() {
     store.startClock();
     const onUnload = () => store.saveSync('auto');
     window.addEventListener('beforeunload', onUnload);
+    window.streetwear?.onBeforeClose(onUnload);
     return () => {
       store.stopClock();
       window.removeEventListener('beforeunload', onUnload);

@@ -77,7 +77,7 @@ export function HQScene({ state, queue }: Props) {
   }
 
   return (
-    <svg className="hq-scene" viewBox="0 0 960 540" preserveAspectRatio="xMidYMid slice" role="img" aria-label={`${name} headquarters`} data-testid="hq-scene">
+    <svg className="hq-scene" viewBox="0 0 960 540" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${name} headquarters`} data-testid="hq-scene">
       <defs>
         <filter id={glow} x="-30%" y="-80%" width="160%" height="260%">
           <feGaussianBlur stdDeviation="6" result="b" />
@@ -98,16 +98,16 @@ export function HQScene({ state, queue }: Props) {
       </defs>
 
       {/* room shell */}
-      <rect width="960" height="540" fill="#07060b" />
-      <rect x="0" y="0" width="960" height="400" fill={level === 1 ? `url(#${brick})` : wall} />
-      <path d="M0 400 L960 400 L960 540 L0 540 Z" fill={floor} />
-      <path d="M0 400 L960 400" stroke="#000" strokeOpacity=".6" strokeWidth="4" />
+      <rect x="-600" y="-100" width="2160" height="740" fill="#07060b" />
+      <rect x="-600" y="-100" width="2160" height="500" fill={level === 1 ? `url(#${brick})` : wall} />
+      <path d="M-600 400 L1560 400 L1560 640 L-600 640 Z" fill={floor} />
+      <path d="M-600 400 L1560 400" stroke="#000" strokeOpacity=".6" strokeWidth="4" />
 
       {level === 0 && (
         <g>
           {/* pipes + street window */}
-          <rect x="0" y="22" width="960" height="10" fill="#2d2838" />
-          <rect x="0" y="40" width="960" height="6" fill="#26222f" />
+          <rect x="-600" y="22" width="2160" height="10" fill="#2d2838" />
+          <rect x="-600" y="40" width="2160" height="6" fill="#26222f" />
           <rect x="560" y="60" width="300" height="70" fill="#0e2230" stroke="#3a3447" strokeWidth="6" />
           <rect x="560" y="60" width="300" height="70" fill="#6cf2ff" opacity=".08" />
           <g className="hq-walk">
@@ -152,16 +152,16 @@ export function HQScene({ state, queue }: Props) {
 
       {level === 2 && (
         <g>
-          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-            <rect key={i} x={i * 120} y="0" width="118" height="400" fill={i % 2 ? '#1d1e2a' : '#20222f'} />
+ {Array.from({ length: 18 }, (_, k) => k - 5).map((i) => (
+            <rect key={i} x={i * 120} y="-100" width="118" height="500" fill={i % 2 ? '#1d1e2a' : '#20222f'} />
           ))}
-          <path d="M0 60 H960" stroke="#c4cad6" strokeOpacity=".25" strokeWidth="2" />
+          <path d="M-600 60 H1560" stroke="#c4cad6" strokeOpacity=".25" strokeWidth="2" />
           {/* glass storefront at the right with the street */}
           <rect x="700" y="90" width="250" height="310" fill="#0b1426" stroke="#c4cad6" strokeWidth="6" />
           <rect x="700" y="90" width="250" height="310" fill="#6cf2ff" opacity=".07" />
           <path d="M825 90 V400" stroke="#c4cad6" strokeWidth="4" />
           {/* shelves */}
-          {[150, 220, 290].map((y) => (
+          {[185, 250, 315].map((y) => (
             <g key={y}>
               <rect x="300" y={y} width="300" height="8" fill="#c4cad6" />
               {[0, 1, 2, 3, 4].map((j) => {

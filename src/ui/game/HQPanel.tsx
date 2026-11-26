@@ -15,6 +15,10 @@ function Sparkline({ values }: { values: number[] }) {
   );
 }
 
+function short(n: number) {
+  return n >= 1000 ? `${(n / 1000).toFixed(n % 1000 ? 1 : 0)}k` : String(n);
+}
+
 export function HQPanel() {
   const { store, s } = useGame();
   const hq = HQ_LEVELS[s.hqLevel];
@@ -56,7 +60,7 @@ export function HQPanel() {
         </div>
         <div className="kpi">
           <span className="kpi-num">
-            {count(used)} / {count(capacity(s))}
+            {short(used)} / {short(capacity(s))}
           </span>
           <span className="kpi-label">warehouse</span>
         </div>

@@ -84,6 +84,17 @@ function driveCurve(amount: number): Float32Array<ArrayBuffer> {
   return c;
 }
 
+function softClipCurve(): Float32Array<ArrayBuffer> {
+  const n = 4096;
+  const c = new Float32Array(n);
+  const k = 1.4;
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * 2 - 1;
+    c[i] = (0.95 * Math.tanh(x * k)) / Math.tanh(k);
+  }
+  return c;
+}
+
 /** Build the shared FX chain into `out`. */
 function makeBus(ctx: BaseAudioContext, out: AudioNode): Bus {
   const comp = ctx.createDynamicsCompressor();
@@ -92,8 +103,12 @@ function makeBus(ctx: BaseAudioContext, out: AudioNode): Bus {
   comp.attack.value = 0.003;
   comp.release.value = 0.15;
   const limiter = ctx.createGain();
-  limiter.gain.value = 0.8;
-  comp.connect(limiter).connect(out);
+  limiter.gain.value = 0.75;
+  // Brick-wall soft clipper: the output can never exceed 0.95.
+  const clipper = ctx.createWaveShaper();
+  clipper.curve = softClipCurve();
+  clipper.oversample = '4x';
+  comp.connect(limiter).connect(clipper).connect(out);
 
   const dry = ctx.createGain();
   dry.connect(comp);

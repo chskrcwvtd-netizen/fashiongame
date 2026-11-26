@@ -14,13 +14,13 @@ import './styles/app.css';
 import { App } from './ui/App';
 import { StoreContext } from './ui/hooks';
 import { GameStore } from './store/gameStore';
-import { sfx } from './audio/sfx';
+import { sfx, renderOffline, SFX_NAMES } from './audio/sfx';
 import { loadSettings } from './ui/screens/Settings';
 
 loadSettings();
 const store = new GameStore(undefined, sfx);
 // exposed for automated play-testing only
-(window as unknown as { __store: GameStore }).__store = store;
+Object.assign(window, { __store: store, __sfxTest: { renderOffline, SFX_NAMES } });
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
