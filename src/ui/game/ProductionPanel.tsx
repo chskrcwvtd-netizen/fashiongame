@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   FACTORIES,
   FACTORY_IDS,
+  LOCKED_FACTORIES,
   designQuality,
   freeCapacity,
   getDesign,
@@ -29,6 +30,7 @@ const RATINGS: Record<FactoryId, { price: number; quality: number; speed: number
   fastloop: { price: 5, quality: 1, speed: 5, risk: 4 },
   danube: { price: 3, quality: 3, speed: 3, risk: 1 },
   nord: { price: 1, quality: 5, speed: 1, risk: 0 },
+  vela: { price: 1, quality: 4, speed: 4, risk: 1 },
 };
 
 export function ProductionPanel() {
@@ -81,7 +83,7 @@ export function ProductionPanel() {
 
       <div className="prod-main">
         <div className="factories">
-          {FACTORY_IDS.map((id) => {
+          {FACTORY_IDS.filter((id) => !LOCKED_FACTORIES[id] || s.unlocks.includes(LOCKED_FACTORIES[id]!)).map((id) => {
             const fd = FACTORIES[id];
             const r = RATINGS[id];
             return (

@@ -30,26 +30,37 @@ export const GLYPHS: Record<string, Glyph> = {
   bolt: { body: 'M14.2 0 3 13.6h7.2L8.6 24 21 9.4h-7.4L14.2 0Z' },
 };
 
-export function EmblemShape({ id, fill, hole, x = 0, y = 0, size = 24 }: { id: string; fill: string; hole: string; x?: number; y?: number; size?: number }) {
+const BADGE_PATHS: Record<string, string> = {
+  circle: 'M12 -1a13 13 0 1 1 -0.01 0Z',
+  diamond: 'M12 -3 L27 12 L12 27 L-3 12 Z',
+  shield: 'M12 -2 L25 2 L24 14 C22 22 16 25 12 27 C8 25 2 22 0 14 L-1 2 Z',
+};
+
+export function EmblemShape({ id, fill, hole, x = 0, y = 0, size = 24, stitch = false, badge }: { id: string; fill: string; hole: string; x?: number; y?: number; size?: number; stitch?: boolean; badge?: string }) {
   const g = GLYPHS[id] ?? GLYPHS.star;
   const s = size / 24;
+  const stitchProps = stitch ? { stroke: 'rgba(0,0,0,.5)', strokeWidth: 0.45, strokeDasharray: '0.9 0.6' } : {};
+  const b = badge && badge !== 'none' ? BADGE_PATHS[badge] : null;
   return (
     <g transform={`translate(${x} ${y}) scale(${s})`}>
-      {g.stroke ? (
-        <path d={g.body} fill="none" stroke={fill} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-      ) : (
-        <path d={g.body} fill={fill} />
-      )}
-      {g.holes && <path d={g.holes} fill={hole} />}
+      {b && <path d={b} fill="none" stroke={fill} strokeWidth={1.6} />}
+      <g transform={b ? 'translate(3.6 3.6) scale(0.7)' : undefined}>
+        {g.stroke ? (
+          <path d={g.body} fill="none" stroke={fill} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+        ) : (
+          <path d={g.body} fill={fill} {...stitchProps} />
+        )}
+        {g.holes && <path d={g.holes} fill={hole} />}
+      </g>
     </g>
   );
 }
 
 /** Standalone emblem icon (logo pickers, top bar). */
-export function EmblemIcon({ id, color, size = 24, hole = '#0a0812' }: { id: string; color: string; size?: number; hole?: string }) {
+export function EmblemIcon({ id, color, size = 24, hole = '#0a0812', badge }: { id: string; color: string; size?: number; hole?: string; badge?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-      <EmblemShape id={id} fill={color} hole={hole} />
+    <svg width={size} height={size} viewBox="-4 -4 32 32" aria-hidden="true" style={{ overflow: 'visible' }}>
+      <EmblemShape id={id} fill={color} hole={hole} badge={badge} />
     </svg>
   );
 }

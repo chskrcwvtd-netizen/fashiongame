@@ -7,7 +7,14 @@ import {
   getDesign,
   reservedUnits,
   setListing,
+  setAutoRestock,
+  collectionSize,
+  customerComments,
+  marketFit,
+  FACTORIES,
+  STAGE3,
   type Design,
+  type FactoryId,
 } from '../../engine';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { NumberField } from '../components/NumberField';
@@ -38,6 +45,10 @@ function Row({ d }: { d: Design }) {
   const active = !!listing?.active;
   const setPrice = (p: number) => store.act((st) => setListing(st, d.id, p, active));
   const ratio = price / fair;
+  const profitDay = exp * (price * 0.95 - (lot?.unitCost ?? 0));
+  const hasManager = s.employees.some((e) => e.role === 'manager');
+  const coll = collectionSize(s, d.vibe);
+  const comments = active && (listing?.soldTotal ?? 0) > 0 ? customerComments(d, { priceRatio: ratio, quality, fit: marketFit(s, d), seed: `shop-${Math.floor(s.day / 7)}` }, 2) : [];
   const hint = ratio > 1.3 ? 'Way too pricey' : ratio > 1.08 ? 'A bit pricey' : ratio < 0.75 ? 'Giving it away' : 'Fair price';
 
   return (
@@ -48,6 +59,28 @@ function Row({ d }: { d: Design }) {
         <span className="muted small">
           {avail} in stock{reserved ? `, ${reserved} held for a drop` : ''}, quality {quality}
         </span>
+        {coll >= STAGE3.collectionMin && active && <span className="collection-badge">Collection +{Math.round(STAGE3.collectionBonus * 100)}%</span>}
+        {comments.length > 0 && (
+          <ul className="comments">
+            {comments.map((c, i) => (
+              <li key={i} className={`c-${c.mood}`}>
+                <strong>{c.handle}</strong> {c.text}
+              </li>
+            ))}
+          </ul>
+        )}
+        {active && (
+          <label className="auto-row small" title={hasManager ? 'Your manager reorders when stock runs low' : 'Hire a manager to use auto-reorder'}>
+            <input
+              type="checkbox"
+              checked={!!listing?.auto}
+              disabled={!hasManager}
+              onChange={(e) => store.act((st) => setAutoRestock(st, d.id, e.target.checked ? { factoryId: (listing?.auto?.factoryId ?? 'danube') as FactoryId, qty: Math.max(FACTORIES.danube.minOrder, Math.round(Math.max(exp * 21, 60))) } : null))}
+              data-testid={`auto-${d.id}`}
+            />
+            Auto-reorder{listing?.auto ? ` ${listing.auto.qty} from ${FACTORIES[listing.auto.factoryId].name}` : hasManager ? '' : ' (needs a manager)'}
+          </label>
+        )}
       </div>
       <div className="shop-price">
         <button className="step" onClick={() => setPrice(price - 5)} aria-label="Lower price by 5">
@@ -66,6 +99,9 @@ function Row({ d }: { d: Design }) {
           {active && avail > 0 ? `≈ ${exp < 10 ? exp.toFixed(1) : Math.round(exp)} a day` : active ? 'Sold out' : 'Not listed'}
         </span>
         <span className="muted small">{listing?.soldWeek ?? 0} sold this week</span>
+        {active && avail > 0 && (
+          <span className={`small ${profitDay > 0 ? 'money' : 'neg'}`}>≈ {money(profitDay)} profit a day</span>
+        )}
         {listing && <MiniBars values={listing.history} />}
       </div>
       <button

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { COLORS, COLOR_IDS, DIFFICULTIES, LOGO_GLYPHS, EMBLEMS, validateBrandName, type DifficultyId } from '../../engine';
+import { COLORS, DIFFICULTIES, validateBrandName, type BadgeId, type DifficultyId, type FontId } from '../../engine';
 import type { SaveMeta } from '../../platform/storage';
 import { EmblemIcon } from '../components/Emblem';
+import { LogoEditor, Wordmark } from '../components/Logo';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { useStore } from '../hooks';
 import { sfx } from '../../audio/sfx';
@@ -10,20 +11,21 @@ import { SettingsBlock } from './Settings';
 
 type View = 'home' | 'new' | 'load' | 'settings';
 
-const LOGO_COLORS = ['pink', 'lime', 'cyber', 'chrome', 'orange', 'purple', 'red', 'bone'];
 
 function NewGame({ onBack }: { onBack: () => void }) {
   const store = useStore();
   const [name, setName] = useState('');
   const [glyph, setGlyph] = useState('star');
   const [color, setColor] = useState('pink');
+  const [badge, setBadge] = useState<BadgeId>('none');
+  const [font, setFont] = useState<FontId>('chrome');
   const [difficulty, setDifficulty] = useState<DifficultyId>('normal');
   const err = name.length ? validateBrandName(name) : null;
   const ok = name.trim().length >= 2 && !err;
   const start = () => {
     if (!ok) return;
     sfx.play('upgrade');
-    store.newGame({ brandName: name.toUpperCase(), logo: { glyph, color }, difficulty });
+    store.newGame({ brandName: name.toUpperCase(), logo: { glyph, color, badge, font }, difficulty });
   };
   return (
     <div className="newgame" data-testid="new-game">
@@ -49,19 +51,16 @@ function NewGame({ onBack }: { onBack: () => void }) {
             {err && <span className="error small">{err}</span>}
           </div>
           <div className="field">
-            <label>Logo</label>
-            <div className="chips">
-              {LOGO_GLYPHS.map((g) => (
-                <button key={g} className={`chip ${glyph === g ? 'on' : ''}`} onClick={() => (sfx.play('click'), setGlyph(g))} title={EMBLEMS[g].name} aria-pressed={glyph === g}>
-                  <EmblemIcon id={g} color={COLORS[color].hex} size={24} />
-                </button>
-              ))}
-            </div>
-            <div className="swatches">
-              {LOGO_COLORS.filter((c) => COLOR_IDS.includes(c)).map((c) => (
-                <button key={c} className={`swatch ${color === c ? 'on' : ''}`} style={{ background: COLORS[c].hex }} onClick={() => (sfx.play('click'), setColor(c))} aria-label={COLORS[c].name} title={COLORS[c].name} />
-              ))}
-            </div>
+            <label>Logo: symbol, colour, badge and lettering</label>
+            <LogoEditor
+              logo={{ glyph, color, badge, font }}
+              onChange={(l) => {
+                setGlyph(l.glyph);
+                setColor(l.color);
+                setBadge(l.badge ?? 'none');
+                setFont(l.font ?? 'chrome');
+              }}
+            />
           </div>
           <div className="field">
             <label>Difficulty</label>
@@ -86,12 +85,12 @@ function NewGame({ onBack }: { onBack: () => void }) {
         </div>
         <div className="newgame-preview">
           <div className="logo-preview">
-            <EmblemIcon id={glyph} color={COLORS[color].hex} size={96} />
-            <span className="logo-preview-name">{name.trim().toUpperCase() || 'YOUR BRAND'}</span>
+            <EmblemIcon id={glyph} color={COLORS[color].hex} size={96} badge={badge} />
+            <Wordmark name={name.trim().toUpperCase() || 'YOUR BRAND'} logo={{ glyph, color, badge, font }} className="logo-preview-name" />
           </div>
           <GarmentPreview
-            design={{ name: 'preview', garment: 'hoodie', primary: 'black', secondary: color, pattern: 'solid', graphic: 'emblem', emblem: 'logo', text: '', font: 'chrome', material: 'standard', vibe: 'y2k' }}
-            logo={{ glyph, color }}
+            design={{ name: 'preview', garment: 'hoodie', primary: 'black', secondary: color, pattern: 'solid', graphic: 'emblem', emblem: 'logo', text: '', font: 'chrome', material: 'standard', vibe: 'y2k', finish: 'print', back: 'none', backText: '' }}
+            logo={{ glyph, color, badge, font }}
             size={240}
           />
           <p className="muted small">Budapest, day one. A basement, some cash, and a name.</p>

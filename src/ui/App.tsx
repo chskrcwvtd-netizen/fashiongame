@@ -10,7 +10,12 @@ import { DesignLab } from './game/DesignLab';
 import { ProductionPanel } from './game/ProductionPanel';
 import { ShopPanel } from './game/ShopPanel';
 import { DropsPanel } from './game/DropsPanel';
-import { DropSplash, GameMenu, GameOver } from './game/Overlays';
+import { GameMenu, GameOver } from './game/Overlays';
+import { CampaignSplash, Intro, LiveDrop } from './game/Moments';
+import { RivalsPanel } from './game/RivalsPanel';
+import { WholesalePanel } from './game/WholesalePanel';
+import { StatsPanel } from './game/StatsPanel';
+import { music } from '../audio/music';
 import { TrendsPanel } from './game/TrendsPanel';
 import { MarketingPanel } from './game/MarketingPanel';
 import { TeamPanel } from './game/TeamPanel';
@@ -36,6 +41,7 @@ function GameScreen() {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       if (e.key === 'Escape') {
+        if (document.querySelector('[data-testid=logo-modal]')) return;
         if (store.splash) store.dismissSplash();
         else if (menu) closeMenu();
         else openMenu();
@@ -64,7 +70,7 @@ function GameScreen() {
     <div className={`game ${store.speed === 0 ? 'is-paused' : ''}`} data-testid="game">
       <TopBar onMenu={openMenu} />
       <NavRail />
-      <main className="stage">
+      <main className="stage" key={store.panel}>
         {store.panel === 'hq' && <HQPanel />}
         {store.panel === 'lab' && <DesignLab />}
         {store.panel === 'production' && <ProductionPanel />}
@@ -73,11 +79,15 @@ function GameScreen() {
         {store.panel === 'trends' && <TrendsPanel />}
         {store.panel === 'marketing' && <MarketingPanel />}
         {store.panel === 'team' && <TeamPanel />}
+        {store.panel === 'rivals' && <RivalsPanel />}
+        {store.panel === 'wholesale' && <WholesalePanel />}
+        {store.panel === 'stats' && <StatsPanel />}
       </main>
       <Feed />
       <Toasts />
-      <DropSplash />
+      <LiveDrop />
       <EventModal />
+      <CampaignSplash />
       <GameOver />
       {menu && <GameMenu onClose={closeMenu} />}
     </div>
@@ -86,6 +96,14 @@ function GameScreen() {
 
 export function App() {
   const store = useStore();
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    void music.init();
+  }, []);
+  useEffect(() => {
+    if (intro) return;
+    music.setScene(store.phase === 'game' ? 'game' : 'menu');
+  }, [store.phase, intro]);
   useEffect(() => {
     store.startClock();
     const onUnload = () => store.saveSync('auto');
@@ -96,5 +114,6 @@ export function App() {
       window.removeEventListener('beforeunload', onUnload);
     };
   }, [store]);
+  if (intro) return <Intro onDone={() => setIntro(false)} />;
   return store.phase === 'game' && store.state ? <GameScreen /> : <MainMenu />;
 }

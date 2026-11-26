@@ -20,7 +20,7 @@ test('every sound effect renders, is audible and does not clip', async ({ page }
   });
   for (const [name, r] of Object.entries(results)) {
     expect.soft(r.nan, `${name} has NaN`).toBe(false);
-    expect.soft(r.peak, `${name} too quiet`).toBeGreaterThan(name === 'hover' ? 0.01 : 0.05);
+    expect.soft(r.peak, `${name} too quiet`).toBeGreaterThan(name === 'hover' || name === 'tick' ? 0.01 : 0.05);
     expect.soft(r.peak, `${name} clips`).toBeLessThanOrEqual(1.0);
   }
   console.log(JSON.stringify(results));

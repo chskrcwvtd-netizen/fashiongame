@@ -17,13 +17,16 @@ export type SfxName =
   | 'upgrade'
   | 'event'
   | 'viral'
-  | 'hire';
+  | 'hire'
+  | 'milestone'
+  | 'intro'
+  | 'tick';
 
-export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade', 'event', 'viral', 'hire'];
+export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade', 'event', 'viral', 'hire', 'milestone', 'intro', 'tick'];
 
 export const SFX_LENGTH: Record<SfxName, number> = {
   click: 0.12, hover: 0.05, cash: 0.9, arrived: 0.6, notify: 0.8, dropAnnounce: 1.4, soldout: 3.2,
-  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6, event: 1.0, viral: 2.0, hire: 0.9,
+  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6, event: 1.0, viral: 2.0, hire: 0.9, milestone: 2.2, intro: 2.6, tick: 0.1,
 };
 
 interface Bus {
@@ -315,6 +318,28 @@ export function scheduleSfx(ctx: BaseAudioContext, out: AudioNode, name: SfxName
       bell(bus, bus.wet, midi(86), t + 0.08, 0.35, 0.3);
       bell(bus, bus.wet, midi(91), t + 0.16, 0.5, 0.28);
       break;
+    case 'tick':
+      tone(bus, bus.dry, 'square', 2200, t, { d: 0.018, peak: 0.07 });
+      break;
+    case 'milestone': {
+      // trophy: rising bells, chord hit, glitter tail
+      [72, 79, 84, 88].forEach((n, i) => bell(bus, bus.wet, midi(n), t + i * 0.09, 0.45, 0.3));
+      supersaw(bus, bus.crush, [midi(60), midi(64), midi(67), midi(72), midi(76)], t + 0.38, { a: 0.01, hold: 0.2, d: 1.2, peak: 0.4 }, [1500, 9000]);
+      eightOhEight(bus, bus.dry, t + 0.38, 170, 46, 0.9, 0.85);
+      [96, 100, 103, 108].forEach((n, i) => bell(bus, bus.wet, midi(n), t + 0.5 + i * 0.06, 0.3, 0.16));
+      break;
+    }
+    case 'intro': {
+      // tape-start riser, glitch stutter, chrome chord with a deep 808
+      tone(bus, bus.crush, 'sawtooth', 40, t, { a: 0.6, d: 0.1, peak: 0.18 }, { toFreq: midi(60), glide: 0.65 });
+      noise(bus, bus.wet, t, { a: 0.6, d: 0.05, peak: 0.2 }, { type: 'bandpass', freq: 300, toFreq: 9000, q: 3 });
+      for (let i = 0; i < 6; i++) tone(bus, bus.crush, 'square', midi(84 + (i % 2) * 7), t + 0.62 + i * 0.045, { d: 0.03, peak: 0.12 });
+      const hit = t + 0.95;
+      eightOhEight(bus, bus.dry, hit, 160, 38, 1.5, 1);
+      supersaw(bus, bus.crush, [midi(57), midi(64), midi(69), midi(72), midi(76)], hit, { a: 0.01, hold: 0.4, d: 1.2, peak: 0.45 }, [900, 8000]);
+      [88, 93, 96, 100].forEach((n, i) => bell(bus, bus.wet, midi(n), hit + 0.1 + i * 0.08, 0.5, 0.2));
+      break;
+    }
     case 'upgrade': {
       const notes = [72, 76, 79, 84, 88, 91];
       notes.forEach((n, i) => bell(bus, bus.wet, midi(n), t + i * 0.08, 0.4, 0.28));
@@ -340,6 +365,8 @@ export class SfxPlayer {
   private last: Partial<Record<SfxName, number>> = {};
   volume = 0.7;
   muted = false;
+  /** small UI blips (click/hover) can be switched off */
+  uiSounds = true;
 
   private ensure(): AudioContext | null {
     if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return null;
@@ -365,6 +392,7 @@ export class SfxPlayer {
 
   play(name: SfxName, minGapMs = 0) {
     if (this.muted) return;
+    if (!this.uiSounds && (name === 'click' || name === 'hover')) return;
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const gap = minGapMs || (name === 'cash' ? 1400 : name === 'hover' ? 60 : 40);
     if ((this.last[name] ?? -Infinity) + gap > now) return;

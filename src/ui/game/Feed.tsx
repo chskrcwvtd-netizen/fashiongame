@@ -1,5 +1,6 @@
 import { useGame } from '../hooks';
 import type { Panel } from '../../store/gameStore';
+import { Coach } from './Moments';
 
 interface Step {
   done: boolean;
@@ -38,7 +39,7 @@ export function Feed() {
   const { store } = useGame();
   return (
     <aside className="feed">
-      <FirstSteps />
+      {store.tutorial ? <Coach /> : <FirstSteps />}
       <h3 className="feed-title">Live feed</h3>
       <ul className="feed-list" data-testid="feed">
         {store.feed.map((f) => (

@@ -16,6 +16,10 @@ import {
   PATTERN_IDS,
   VIBES,
   VIBE_IDS,
+  FINISHES,
+  FINISH_IDS,
+  LOCKED_GARMENTS,
+  type BackPrint,
   trendDelta,
   trendPop,
   type TrendCategory,
@@ -32,6 +36,7 @@ import { GarmentPreview } from '../components/GarmentPreview';
 import { EmblemIcon } from '../components/Emblem';
 import { money, useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
+import { exportImage } from '../exportImage';
 
 const DEFAULT: DesignInput = {
   name: 'NIGHT SIGNAL HOODIE',
@@ -45,6 +50,9 @@ const DEFAULT: DesignInput = {
   emblem: 'logo',
   material: 'standard',
   vibe: 'y2k',
+  finish: 'print',
+  back: 'logo',
+  backText: '',
 };
 
 const GARMENT_ICONS: Record<string, string> = {
@@ -107,6 +115,7 @@ export function DesignLab() {
     const last = s.designs[s.designs.length - 1];
     return last ? { ...DEFAULT, ...last } : DEFAULT;
   });
+  const [side, setSide] = useState<'front' | 'back'>('front');
   const set = <K extends keyof DesignInput>(k: K, v: DesignInput[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const fit = marketFit(s, draft);
   const qDanube = designQuality(draft, 'danube', s);
@@ -131,7 +140,7 @@ export function DesignLab() {
         <div className="field">
           <label>Piece</label>
           <div className="chips">
-            {GARMENT_IDS.map((g) => (
+            {GARMENT_IDS.filter((g) => !LOCKED_GARMENTS[g] || s.unlocks.includes(LOCKED_GARMENTS[g]!)).map((g) => (
               <Chip key={g} value={g} current={draft.garment} heat={heatClass(s, 'garment', g)} onPick={(v) => setDraft((d) => ({ ...d, garment: v, name: d.name.replace(/(TEE|HOODIE|CARGO PANTS|PUFFER JACKET|CAP|BEANIE)$/, GARMENTS[v].name.toUpperCase()) }))} testid={`garment-${g}`}>
                 <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
                   <path d={GARMENT_ICONS[g]} fill="currentColor" />
@@ -204,6 +213,7 @@ export function DesignLab() {
               </Chip>
             ))}
           </div>
+          {!s.unlocks.includes('unlock_track') && <span className="muted small">Sell out a drop to unlock the Track Jacket.</span>}
           <span className="muted small heat-legend">
             <i className="legend-hot" /> hot right now <i className="legend-rising" /> rising
           </span>
@@ -219,11 +229,53 @@ export function DesignLab() {
             ))}
           </div>
         </div>
+
+        <div className="field">
+          <label>Finish: {FINISHES[draft.finish].blurb}</label>
+          <div className="chips">
+            {FINISH_IDS.map((f) => (
+              <Chip key={f} value={f} current={draft.finish} onPick={(v) => set('finish', v)} testid={`finish-${f}`}>
+                {FINISHES[f].name}
+              </Chip>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Back print</label>
+          <div className="chips">
+            {(['none', 'logo', 'text'] as BackPrint[]).map((b) => (
+              <Chip
+                key={b}
+                value={b}
+                current={draft.back}
+                onPick={(v) => {
+                  set('back', v);
+                  setSide('back');
+                }}
+                testid={`back-${b}`}
+              >
+                {b === 'none' ? 'Plain' : b === 'logo' ? 'Big logo' : 'Text'}
+              </Chip>
+            ))}
+          </div>
+          {draft.back === 'text' && (
+            <input className="input" maxLength={18} value={draft.backText} placeholder="Up to 18 characters" onChange={(e) => set('backText', e.target.value)} onFocus={() => setSide('back')} data-testid="back-text-input" />
+          )}
+        </div>
       </div>
 
       <div className="lab-stage">
-        <div className="turntable">
-          <GarmentPreview design={draft} logo={s.brand.logo} size={360} className="lab-preview" />
+        <div className="turntable" id="lab-turntable">
+          <GarmentPreview design={draft} logo={s.brand.logo} size={360} className="lab-preview" side={side} />
+          <div className="side-toggle" role="group" aria-label="View">
+            <button className={side === 'front' ? 'on' : ''} onClick={() => setSide('front')} data-testid="view-front">
+              Front
+            </button>
+            <button className={side === 'back' ? 'on' : ''} onClick={() => setSide('back')} data-testid="view-back">
+              Back
+            </button>
+          </div>
         </div>
         <div className="name-row">
           <input className="input name-input" maxLength={32} value={draft.name} onChange={(e) => set('name', e.target.value.toUpperCase())} data-testid="design-name" aria-label="Design name" />
@@ -238,9 +290,14 @@ export function DesignLab() {
             Shuffle name
           </button>
         </div>
-        <button className="btn btn-primary btn-big" onClick={save} data-testid="save-design">
-          Save design
-        </button>
+        <div className="row center">
+          <button className="btn btn-primary btn-big" onClick={save} data-testid="save-design">
+            Save design
+          </button>
+          <button className="btn btn-ghost" onClick={() => void exportImage(draft.name)} data-testid="export-image" title="Save a picture of this piece">
+            Save as image
+          </button>
+        </div>
       </div>
 
       <div className="lab-stats">
@@ -258,7 +315,7 @@ export function DesignLab() {
           <h3>Cost and quality by factory</h3>
           <table className="mini">
             <tbody>
-              {FACTORY_IDS.map((f) => (
+              {FACTORY_IDS.filter((f) => f !== 'vela' || s.unlocks.includes('unlock_vela')).map((f) => (
                 <tr key={f}>
                   <td>{FACTORIES[f].name}</td>
                   <td>{money(unitCost(s, draft, f))} each</td>
@@ -273,7 +330,9 @@ export function DesignLab() {
           <p className="big-num">
             {money(fair * 0.9)} to {money(fair * 1.05)}
           </p>
-          <p className="muted small">At Danube Works quality. Price above this and sales fall off fast. Drops with hype can charge more.</p>
+          <p className="muted small">
+            At Danube Works quality. You keep about {money(fair * 0.97 * 0.95 - unitCost(s, draft, 'danube'))} per piece at that price. Price above this and sales fall off fast.
+          </p>
         </section>
 
         {s.designs.length > 0 && (

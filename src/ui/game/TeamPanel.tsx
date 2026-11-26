@@ -15,6 +15,7 @@ import {
   type Employee,
 } from '../../engine';
 import { money, useGame } from '../hooks';
+import { Avatar as DrawnAvatar } from '../components/Avatar';
 
 const ROLE_COLOR: Record<string, string> = {
   designer: '#ff3ec8',
@@ -25,13 +26,9 @@ const ROLE_COLOR: Record<string, string> = {
 };
 
 function Avatar({ e }: { e: Employee }) {
-  const initials = e.name
-    .split(' ')
-    .map((p) => p[0])
-    .join('');
   return (
-    <span className="avatar" style={{ background: ROLE_COLOR[e.role] }} aria-hidden="true">
-      {initials}
+    <span className="avatar" style={{ boxShadow: `0 0 0 2px ${ROLE_COLOR[e.role]}` }}>
+      <DrawnAvatar e={e} size={44} />
     </span>
   );
 }
@@ -64,6 +61,11 @@ function StaffCard({ e }: { e: Employee }) {
           {ROLES[e.role].name}, {TRAITS[e.trait].name}
         </span>
         <Skill n={e.skill} />
+        {e.skill < 10 && (
+          <span className="xp" title="Experience to the next skill level">
+            <span style={{ width: `${Math.min(100, ((e.xp ?? 0) / (6 + e.skill * 2)) * 100)}%` }} />
+          </span>
+        )}
       </div>
       <div className="staff-mood">
         <span className={`mood-bar ${e.mood < 35 ? 'low' : ''}`}>

@@ -2,10 +2,13 @@ import { useId } from 'react';
 import { COLORS, type Design, type GameState } from '../../engine';
 import { EmblemShape } from './Emblem';
 import { GarmentPreview } from './GarmentPreview';
+import { WORDMARK_FONT } from './Logo';
 
 interface Props {
   state: GameState;
   queue: number;
+  /** a courier unloads boxes at the door */
+  courier?: boolean;
 }
 
 function Box({ x, y, w = 54, h = 40 }: { x: number; y: number; w?: number; h?: number }) {
@@ -54,7 +57,7 @@ function Rack({ x, y, designs, width = 150 }: { x: number; y: number; designs: D
   );
 }
 
-export function HQScene({ state, queue }: Props) {
+export function HQScene({ state, queue, courier = false }: Props) {
   const uid = useId().replace(/:/g, '');
   const level = state.hqLevel;
   const latest = state.designs[state.designs.length - 1];
@@ -182,11 +185,11 @@ export function HQScene({ state, queue }: Props) {
 
       {/* neon sign */}
       <g className="hq-neon" filter={`url(#${glow})`}>
-        <EmblemShape id={state.brand.logo.glyph} fill={logoColor} hole={wall} x={level === 2 ? 70 : 60} y={level === 2 ? 90 : 120} size={level === 2 ? 70 : 54} />
+        <EmblemShape id={state.brand.logo.glyph} fill={logoColor} hole={wall} x={level === 2 ? 70 : 60} y={level === 2 ? 90 : 120} size={level === 2 ? 70 : 54} badge={state.brand.logo.badge} />
         <text
           x={level === 2 ? 160 : 130}
           y={level === 2 ? 140 : 160}
-          fontFamily="'Unbounded', sans-serif"
+          fontFamily={WORDMARK_FONT[state.brand.logo.font ?? 'chrome']}
           fontWeight={800}
           fontSize={level === 2 ? 50 : level === 1 ? 40 : 32}
           fill="none"
@@ -240,8 +243,37 @@ export function HQScene({ state, queue }: Props) {
         const spots = level === 0 ? [[660, 470], [740, 480]] : level === 1 ? [[600, 460], [700, 470], [780, 455], [200, 470], [860, 480]] : [[330, 470], [440, 480], [540, 465], [250, 485], [760, 480], [820, 470], [880, 485], [210, 470]];
         const [x, y] = spots[i % spots.length];
         const color = { designer: '#ff3ec8', marketer: '#d4ff3a', sourcer: '#6cf2ff', manager: '#ffc24a', analyst: '#a98bff' }[e.role];
-        return <Person key={e.id} x={x} y={y} color={color} delay={i * 0.31} scale={0.9} />;
+        return (
+          <g key={e.id} className={`hq-wander w${i % 3}`}>
+            <Person x={x} y={y} color={color} delay={i * 0.31} scale={0.9} />
+          </g>
+        );
       })}
+
+      {/* gold plaque for the first million */}
+      {state.milestones?.revenue_1m && (
+        <g transform={level === 2 ? 'translate(860 60)' : 'translate(820 210)'}>
+          <rect width="70" height="50" rx="4" fill="#d9b36a" stroke="#6a4e1a" strokeWidth="3" />
+          <text x="35" y="22" textAnchor="middle" fontFamily="'Unbounded', sans-serif" fontWeight={800} fontSize="13" fill="#3a2a0a">
+            $1M
+          </text>
+          <text x="35" y="38" textAnchor="middle" fontFamily="'Chakra Petch', sans-serif" fontSize="8" fill="#3a2a0a">
+            CLUB
+          </text>
+        </g>
+      )}
+
+      {/* courier on delivery day */}
+      {courier && (
+        <g className="hq-courier">
+          <rect x="760" y="440" width="70" height="44" rx="6" fill="#ffc24a" stroke="#2b1f12" strokeWidth="2" />
+          <rect x="770" y="448" width="22" height="16" fill="#0b1426" />
+          <circle cx="775" cy="488" r="9" fill="#15121d" />
+          <circle cx="815" cy="488" r="9" fill="#15121d" />
+          <Box x={840} y={452} w={40} h={32} />
+          <Box x={850} y={424} w={34} h={28} />
+        </g>
+      )}
 
       {/* the queue on drop day */}
       {Array.from({ length: queue }).map((_, i) => (

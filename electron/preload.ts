@@ -19,4 +19,7 @@ contextBridge.exposeInMainWorld('streetwear', {
     });
   },
   toggleFullscreen: () => ipcRenderer.send('app:fullscreen'),
+  captureRect: (rect: { x: number; y: number; width: number; height: number }, name: string) => ipcRenderer.invoke('capture:rect', rect, name),
+  openMusicFolder: () => ipcRenderer.send('music:open'),
+  musicTracks: () => ipcRenderer.invoke('music:list'),
 });

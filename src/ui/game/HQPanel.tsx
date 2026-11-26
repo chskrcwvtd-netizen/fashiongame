@@ -1,5 +1,7 @@
-import { HQ_LEVELS, activeDrop, capacity, getDesign, nextHqLevel, stockUnits, incomingUnits, upgradeCost, upgradeHQ, weeklyBillEstimate } from '../../engine';
+import { STAGE3, playerRank, HQ_LEVELS, activeDrop, capacity, getDesign, nextHqLevel, stockUnits, incomingUnits, upgradeCost, upgradeHQ, weeklyBillEstimate } from '../../engine';
 import { HQScene } from '../components/HQScene';
+import { useState } from 'react';
+import { LogoEditor } from '../components/Logo';
 import { count, money, useGame } from '../hooks';
 
 function Sparkline({ values }: { values: number[] }) {
@@ -21,6 +23,8 @@ function short(n: number) {
 
 export function HQPanel() {
   const { store, s } = useGame();
+  const [editing, setEditing] = useState(false);
+  const rank = playerRank(s);
   const hq = HQ_LEVELS[s.hqLevel];
   const next = nextHqLevel(s);
   const cost = upgradeCost(s);
@@ -34,7 +38,10 @@ export function HQPanel() {
   return (
     <div className="panel hq-panel" data-testid="panel-hq">
       <div className="hq-stage">
-        <HQScene state={s} queue={queue} />
+        <HQScene state={s} queue={queue} courier={store.lastArrivalDay >= s.day - 1} />
+        <button className="btn btn-ghost edit-logo" onClick={() => setEditing(true)} data-testid="edit-logo">
+          Edit logo
+        </button>
         <div className="hq-caption">
           <h2 className="display">{hq.name.toLowerCase()}</h2>
           {drop && (
@@ -79,6 +86,11 @@ export function HQPanel() {
           <h3>Weekly revenue</h3>
           <Sparkline values={s.stats.weeklyRevenue} />
         </section>
+        <section className="card goal-mini" onClick={() => store.setPanel('rivals')} role="button" tabIndex={0}>
+          <h3>The goal</h3>
+          <p className="big-num">#{rank}</p>
+          <p className="muted small">{s.campaign.wonDay ? 'You are the champion. Defend it.' : `Be number one on the chart by the end of year ${STAGE3.campaignYears}.`}</p>
+        </section>
         <section className="card upgrade" data-testid="upgrade-card">
           {next && cost !== null ? (
             <>
@@ -105,6 +117,17 @@ export function HQPanel() {
           )}
         </section>
       </div>
+      {editing && (
+        <div className="modal-back" onClick={() => setEditing(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-label="Edit logo" onClick={(e) => e.stopPropagation()} data-testid="logo-modal">
+            <h2 className="display">your logo</h2>
+            <LogoEditor logo={s.brand.logo} onChange={(l) => store.mutate((st) => (st.brand.logo = l))} />
+            <button className="btn btn-primary" onClick={() => setEditing(false)} autoFocus>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { COLORS, dateInfo, graceDaysLeft, type Speed } from '../../engine';
 import { EmblemIcon } from '../components/Emblem';
+import { Wordmark } from '../components/Logo';
 import { count, money, useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
 
@@ -29,12 +30,19 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   return (
     <header className="topbar">
       <div className="brandmark">
-        <EmblemIcon id={s.brand.logo.glyph} color={COLORS[s.brand.logo.color]?.hex ?? '#fff'} size={34} />
-        <span className="brandmark-name">{s.brand.name}</span>
+        <EmblemIcon id={s.brand.logo.glyph} color={COLORS[s.brand.logo.color]?.hex ?? '#fff'} size={34} badge={s.brand.logo.badge} />
+        <Wordmark name={s.brand.name} logo={s.brand.logo} className="brandmark-name" />
       </div>
 
-      <div className={`cash ${s.cash < 0 ? 'cash-neg' : ''}`} data-testid="cash" title="Cash">
-        {money(s.cash, true)}
+      <div className="cash-wrap">
+        <div className={`cash ${s.cash < 0 ? 'cash-neg' : ''}`} data-testid="cash" title="Cash">
+          {money(s.cash, true)}
+        </div>
+        {store.floaters.map((f) => (
+          <span key={f.id} className="floater" aria-hidden="true">
+            +{money(f.amount, true)}
+          </span>
+        ))}
       </div>
 
       {grace !== null && (

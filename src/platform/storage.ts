@@ -28,7 +28,16 @@ interface Bridge {
 
 declare global {
   interface Window {
-    streetwear?: { saves: Bridge; quit(): void; toggleFullscreen(): void; onBeforeClose(cb: () => void): void; isDesktop: true };
+    streetwear?: {
+      saves: Bridge;
+      quit(): void;
+      toggleFullscreen(): void;
+      onBeforeClose(cb: () => void): void;
+      isDesktop: true;
+      captureRect?(rect: { x: number; y: number; width: number; height: number }, name: string): Promise<boolean>;
+      openMusicFolder?(): void;
+      musicTracks?(): Promise<string[]>;
+    };
   }
 }
 

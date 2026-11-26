@@ -20,7 +20,7 @@ import type { SfxName } from '../audio/sfx';
 
 export const MS_PER_DAY_1X = 2000;
 
-export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team';
+export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team' | 'rivals' | 'wholesale' | 'stats';
 export type Phase = 'menu' | 'game';
 export type Tone = 'money' | 'good' | 'bad' | 'info';
 
@@ -62,6 +62,14 @@ export class GameStore {
   selectedDesignId: string | null = null;
   /** outcome text of the event the player just decided, shown before the modal closes */
   eventOutcome: { title: string; text: string } | null = null;
+  /** floating "+$" numbers by the cash counter (big moments only) */
+  floaters: { id: number; amount: number }[] = [];
+  /** campaign result screen: won, or time ran out */
+  campaignSplash: { kind: 'won' | 'ended'; rank: number } | null = null;
+  /** day the last shipment arrived (HQ shows a courier) */
+  lastArrivalDay = -99;
+  /** guided first-drop tutorial */
+  tutorial = true;
   private version = 0;
   private listeners = new Set<() => void>();
   private nextFeedId = 1;
@@ -88,6 +96,8 @@ export class GameStore {
   // ---- lifecycle ----------------------------------------------------------
   newGame(opts: NewGameOptions) {
     this.state = createNewGame(opts);
+    this.tutorial = true;
+    this.campaignSplash = null;
     this.phase = 'game';
     this.panel = 'hq';
     this.speed = 1;
@@ -101,6 +111,8 @@ export class GameStore {
 
   loadState(state: GameState) {
     this.state = state;
+    this.tutorial = !state.flags.tutorialDone && state.drops.length === 0;
+    this.campaignSplash = null;
     this.phase = 'game';
     this.panel = 'hq';
     this.speed = 0;
@@ -131,7 +143,7 @@ export class GameStore {
 
   get effectiveSpeed(): Speed {
     if (this.phase !== 'game' || !this.state || this.state.gameOver || this.splash) return 0;
-    if (this.state.pendingEvents.length > 0 || this.eventOutcome) return 0;
+    if (this.state.pendingEvents.length > 0 || this.eventOutcome || this.campaignSplash) return 0;
     return this.speed;
   }
 
@@ -196,6 +208,33 @@ export class GameStore {
     return out;
   }
 
+  floatMoney(amount: number) {
+    if (amount < 1) return;
+    const id = this.nextFeedId++;
+    this.floaters.push({ id, amount });
+    if (this.floaters.length > 4) this.floaters.shift();
+    if (typeof setTimeout !== 'undefined')
+      setTimeout(() => {
+        this.floaters = this.floaters.filter((f) => f.id !== id);
+        this.bump();
+      }, 1800);
+  }
+
+  dismissCampaign() {
+    if (this.state && this.campaignSplash) {
+      if (this.campaignSplash.kind === 'won') this.state.campaign.winSeen = true;
+      else this.state.campaign.endSeen = true;
+    }
+    this.campaignSplash = null;
+    this.bump();
+  }
+
+  endTutorial() {
+    this.tutorial = false;
+    if (this.state) this.state.flags.tutorialDone = true;
+    this.bump();
+  }
+
   /** Choose an option in the current decision event. */
   chooseEventOption(index: number) {
     const s = this.state;
@@ -204,7 +243,9 @@ export class GameStore {
     if (!pe) return;
     const def = eventDef(pe.defId);
     const title = def ? def.title(s, pe.params) : 'Decision';
+    const cashBefore = s.cash;
     const r = resolveEvent(s, index);
+    if (r.ok && s.cash - cashBefore >= 100) this.floatMoney(s.cash - cashBefore);
     if (!r.ok) {
       this.sound.play('error');
       this.toast(r.reason, undefined, 'bad');
@@ -268,6 +309,7 @@ export class GameStore {
           this.pushFeed(`Shipment in: ${e.units}× ${this.designName(e.designId)}`, 'good');
           this.toast('Shipment arrived', `${e.units}× ${this.designName(e.designId)} in the warehouse.`, 'good');
           this.sound.play('arrived');
+          this.lastArrivalDay = s.day;
           break;
         case 'defect':
           break; // the decision event explains it
@@ -300,14 +342,51 @@ export class GameStore {
           this.pushFeed(e.text, 'info');
           break;
         case 'boostEnded':
-          this.pushFeed(`${e.source} campaign ended.`, 'info');
+          this.pushFeed(`${e.source} effect ended.`, 'info');
+          break;
+        case 'milestone':
+          this.toast(`Trophy: ${e.title}`, e.reward, 'good');
+          this.pushFeed(`Milestone: ${e.title}. ${e.reward}.`, 'good');
+          this.sound.play('milestone');
+          break;
+        case 'rivalNews':
+          this.pushFeed(e.text, 'info');
+          break;
+        case 'wholesaleOffer':
+          this.pushFeed('New wholesale offer. Check the Wholesale screen.', 'info');
+          break;
+        case 'wholesalePaid':
+          this.pushFeed(`Wholesale payment in: +${money(e.amount)}`, 'money');
+          this.floatMoney(e.amount);
+          this.sound.play('cash');
+          break;
+        case 'wholesaleDefault':
+          this.toast('A store never paid', `${money(e.amount)} is gone. They went bust.`, 'bad');
+          this.pushFeed(`A wholesale customer went bust owing you ${money(e.amount)}.`, 'bad');
+          this.sound.play('flop');
+          break;
+        case 'staffLevelUp':
+          this.toast(`${e.name} levelled up`, `Skill ${e.skill}/10. They might expect a raise soon.`, 'good');
+          this.pushFeed(`${e.name} got better at the job (skill ${e.skill}).`, 'good');
+          this.sound.play('hire');
+          break;
+        case 'autoRestock':
+          this.pushFeed(`Manager reordered ${e.units}× ${this.designName(e.designId)}.`, 'info');
+          break;
+        case 'campaignWon':
+          if (!s.campaign.winSeen) this.campaignSplash = { kind: 'won', rank: 1 };
+          this.sound.play('milestone');
+          break;
+        case 'campaignEnded':
+          if (!s.campaign.endSeen) this.campaignSplash = { kind: 'ended', rank: e.rank };
           break;
         case 'dropResult': {
           const name = this.designName(e.designId);
           this.splash = { designName: name, result: e.result };
+          this.floatMoney(e.result.revenue);
           const label = e.result.outcome === 'soldout' ? 'SOLD OUT' : e.result.outcome === 'solid' ? 'Solid drop' : 'Flop';
           this.pushFeed(`Drop: ${name}. ${label}, ${e.result.sold}/${e.result.units} sold, +${money(e.result.revenue)}`, e.result.outcome === 'flop' ? 'bad' : 'money');
-          this.sound.play(e.result.outcome === 'soldout' ? 'soldout' : e.result.outcome === 'flop' ? 'flop' : 'notify');
+          // the drop splash plays its own sounds as the count runs
           break;
         }
         case 'dropPostponed':

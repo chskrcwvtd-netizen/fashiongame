@@ -6,10 +6,16 @@ const state = (page: Page) => page.evaluate(() => {
   return s ? { day: s.day, cash: s.cash, orders: s.orders.length, stock: Object.values(s.inventory).reduce((a: number, l: any) => a + l.units, 0), sold: s.stats.unitsSold, gameOver: !!s.gameOver, drops: s.drops.length } : null;
 });
 
+async function skipIntro(page: Page) {
+  await page.getByTestId('intro').click({ timeout: 5000 }).catch(() => {});
+  await expect(page.getByTestId('main-menu')).toBeVisible();
+}
+
 async function startGame(page: Page, name = 'E2E CLUB') {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
+  await skipIntro(page);
   await page.getByTestId('new-game-btn').click();
   await page.getByTestId('brand-name').fill(name);
   await page.getByTestId('difficulty-normal').click();
@@ -36,7 +42,7 @@ test('a full short round: design, produce, sell, drop, save, reload', async ({ p
   page.on('pageerror', (e) => errors.push(String(e)));
   await startGame(page);
   await expect(page.getByTestId('cash')).toHaveText('$12.0k');
-  await expect(page.getByTestId('first-steps')).toBeVisible();
+  await expect(page.getByTestId('coach')).toBeVisible();
 
   // Design
   await page.getByTestId('nav-lab').click();
@@ -202,5 +208,81 @@ test('stage 2: hire, post, research trends and decide an event', async ({ page }
   await page.getByTestId('event-ok').click();
   await expect(page.getByTestId('feed')).toContainText('A fashion blog wants you');
   await page.screenshot({ path: 'test-results/stage2-hq.png' });
+  expect(errors).toEqual([]);
+});
+
+test('stage 3: tutorial, chart, wholesale, trophies, logo, back print', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await startGame(page, 'STAGE THREE');
+  await page.getByTestId('speed-0').click();
+
+  // tutorial points the way, and can be skipped
+  await expect(page.getByTestId('coach')).toBeVisible();
+  await page.getByTestId('coach-go').click();
+  await expect(page.getByTestId('panel-lab')).toBeVisible();
+
+  // design with a finish and a back print; flip to the back
+  await page.getByTestId('finish-washed').click();
+  await page.getByTestId('back-text').click();
+  await page.getByTestId('back-text-input').fill('BUDAPEST');
+  await page.getByTestId('view-back').click();
+  await expect(page.locator('#lab-turntable svg text')).toContainText('BUDAPEST');
+  await page.getByTestId('save-design').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.designs[0].finish)).toBe('washed');
+  await page.getByTestId('coach-skip').click();
+  await expect(page.getByTestId('coach')).toHaveCount(0);
+
+  // the chart
+  await page.getByTestId('nav-rivals').click();
+  await expect(page.getByTestId('leaderboard').locator('li')).toHaveCount(7);
+  await page.getByTestId('diss-krush').click();
+  await expect(page.getByTestId('diss-krush')).toBeDisabled();
+
+  // wholesale opens after 1,000 sales
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    const s = st.state;
+    s.stats.unitsSold = 1200;
+    s.reputation = 60;
+    s.inventory[s.designs[0].id] = { units: 500, quality: 50, unitCost: 12 };
+    st.bump();
+  });
+  await page.getByTestId('speed-4').click();
+  await expect.poll(async () => page.evaluate(() => (window as unknown as W).__store.state.unlocks.includes('unlock_wholesale')), { timeout: 10_000 }).toBe(true);
+  await page.getByTestId('speed-0').click();
+  await settle(page);
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    const s = st.state;
+    s.wholesale.offers.push({ id: 'wtest', storeId: 'concrete', designId: s.designs[0].id, units: 40, unitPrice: 30, payDays: 30, expiresDay: s.day + 10 });
+    st.bump();
+  });
+  await page.getByTestId('nav-wholesale').click();
+  await page.getByTestId('accept-wtest').click();
+  await expect(page.locator('.receivables li')).toHaveCount(1);
+
+  // trophies and stats
+  await page.getByTestId('nav-stats').click();
+  await expect(page.getByTestId('trophies').locator('li.won').first()).toBeVisible();
+
+  // logo editor
+  await page.getByTestId('nav-hq').click();
+  await page.getByTestId('edit-logo').click();
+  await page.getByTestId('badge-shield').click();
+  await page.getByTestId('wordmark-gothic').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.brand.logo)).toMatchObject({ badge: 'shield', font: 'gothic' });
+  await page.locator('[data-testid=logo-modal] .btn-primary').click();
+  await expect(page.getByTestId('logo-modal')).toHaveCount(0);
+
+  // campaign win screen
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    st.campaignSplash = { kind: 'won', rank: 1 };
+    st.bump();
+  });
+  await expect(page.getByTestId('campaign-splash')).toBeVisible();
+  await page.getByTestId('campaign-continue').click();
+  await page.screenshot({ path: 'test-results/stage3-hq.png' });
   expect(errors).toEqual([]);
 });

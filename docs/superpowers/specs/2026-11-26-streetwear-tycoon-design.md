@@ -440,3 +440,8 @@ checklist is expected), window size (default 1600×900, resizable, minimum
 - Random decision events arrive roughly every 18 in-game days (about 35 s at 1x); time pauses until you choose.
 - Four job candidates (four different roles) every Monday; desks: Basement 2, Studio 5, Flagship 10.
 - An artist collab powers up the next drop and takes 15% of that drop's revenue.
+
+## 13. Stage 3 and polish decisions (2026-11-26, builder answered its own 30 questions at the user's request)
+
+Interactive first-drop tutorial; 5-year goal (be #1 on the chart, then free play); pace unchanged; optional manager-run auto-reorder; Normal unchanged; livelier HQ (wandering staff, courier on delivery days, $1M plaque); front/back garment view with back prints; logo editor (badge + wordmark font); money floaters only for big moments; single chrome-neon theme; player's own music from a music folder (menu/game/drop, crossfaded; silent until added); SFX kept, UI click sounds switchable; finishes (printed/embroidered/washed/distressed); automatic "collections" (3+ live pieces sharing a vibe: +8% appeal); profit hints; save design as image; live drop counter with customer comments and restock (restocks draw 20% fewer buyers); events every ~18 days with chained follow-ups; staff level up with experience; drawn avatars; active rivals (trend chasing, copying, disses, beef); milestones unlock content (Track Jacket, Wholesale, Vela Craftworks) and fill a trophy wall; weekly chart with movers; animated intro with its own synthesised sound; Numbers screen; English only.
+Balance: optimal Normal bot first reaches #1 in year 1–2; on Hard it does not within 5 years (stage 4 world markets will lift the home-market ceiling).
