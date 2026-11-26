@@ -3,6 +3,7 @@ import { seedFromString } from './rng';
 import { initTrends } from './trends';
 import { refreshCandidates } from './team';
 import { initRivals } from './rivals';
+import { corporateDefaults } from './corporate';
 import type { DifficultyId, GameState, LogoChoice } from './types';
 
 export interface NewGameOptions {
@@ -27,7 +28,7 @@ export function createNewGame(opts: NewGameOptions): GameState {
   const name = opts.brandName.trim();
   const seed = (opts.seed ?? seedFromString(name + ':' + Date.now())) >>> 0;
   const state: GameState = {
-    version: 3,
+    version: 4,
     seed,
     rngState: seedFromString(`rng:${seed}`),
     day: 1,
@@ -61,10 +62,16 @@ export function createNewGame(opts: NewGameOptions): GameState {
     nextId: 1,
     ...stage2Defaults(),
     ...stage3Defaults(),
+    ...stage4Defaults(),
   };
   state.trends = initTrends(state);
   refreshCandidates(state);
   return state;
+}
+
+/** Fresh stage 4 fields. */
+export function stage4Defaults(): Pick<GameState, 'cities' | 'corporate' | 'shows'> {
+  return { cities: {}, corporate: corporateDefaults(), shows: { applied: [], lastRunwayDay: -999, history: [] } };
 }
 
 /** Fresh stage 3 fields. */

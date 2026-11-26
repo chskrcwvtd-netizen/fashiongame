@@ -7,10 +7,7 @@ import type { GameEvent, GameState, PlatformId, PostKind } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** 1 → 0 as followers approach the home market ceiling (kept here to avoid an import cycle). */
-function room(state: GameState): number {
-  return Math.max(0.02, 1 - state.followers / 120000);
-}
+import { room } from './audience';
 
 export function postsLeft(state: GameState): number {
   const used = state.posts.day === state.day ? state.posts.count : 0;

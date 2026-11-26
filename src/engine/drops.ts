@@ -4,6 +4,8 @@ import { newId } from './newGame';
 import { randRange } from './rng';
 import { availableUnits, growthRoom, recordSale } from './webshop';
 import { COLLAB_REVENUE_SHARE, collabDemand } from './marketing';
+import { localBonus } from './world';
+import { engagedFollowers } from './audience';
 import type { ActionResult, Drop, DropResult, GameEvent, GameState } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -86,7 +88,7 @@ export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'pric
   const h = drop.hype / 100;
   const fairDrop = fairPrice(state, design, quality) * (1 + 0.6 * h);
   const pf = priceFactor(fairDrop, drop.price, ECON.priceElasticity);
-  const base = state.followers * (0.05 + 0.25 * Math.pow(h, 1.2)) + 30 * h + 5 + collabDemand(state);
+  const base = engagedFollowers(state.followers) * (0.05 + 0.25 * Math.pow(h, 1.2)) + 30 * h + 5 + collabDemand(state);
   return (
     base *
     appeal(state, design, quality) *
@@ -95,7 +97,8 @@ export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'pric
     Math.pow(seasonFactor(state, design), 0.7) *
     DIFFICULTIES[state.difficulty].demandMult *
     (drop.restock ? STAGE3.restockDemandMult : 1) *
-    (drop.clash ? 0.8 : 1)
+    (drop.clash ? 0.8 : 1) *
+    localBonus(state, design)
   );
 }
 

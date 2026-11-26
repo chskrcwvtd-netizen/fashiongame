@@ -1,5 +1,7 @@
 export type DifficultyId = 'easy' | 'normal' | 'hard';
-export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie' | 'track';
+export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie' | 'track' | 'sneakers' | 'bag' | 'jewelry' | 'perfume';
+export type CityId = 'london' | 'paris' | 'tokyo' | 'la' | 'seoul';
+export type ShowBudget = 'small' | 'medium' | 'big';
 export type MaterialId = 'basic' | 'standard' | 'premium' | 'luxe';
 export type FactoryId = 'fastloop' | 'danube' | 'nord' | 'vela';
 export type PatternId = 'solid' | 'camo' | 'tiedye' | 'checker' | 'stripes' | 'flames' | 'grid' | 'gradient';
@@ -179,7 +181,7 @@ export interface GameStats {
 }
 
 export interface GameState {
-  version: 3;
+  version: 4;
   seed: number;
   rngState: number;
   day: number;
@@ -221,6 +223,32 @@ export interface GameState {
   scheduledEvents: { defId: string; day: number; params: Record<string, string | number> }[];
   campaign: { wonDay: number | null; endSeen: boolean; winSeen: boolean };
   history: { followers: number[]; value: number[]; rank: number[] };
+  // ---- stage 4 ----
+  cities: Partial<Record<CityId, 1 | 2>>;
+  corporate: Corporate;
+  shows: { applied: ShowBooking[]; lastRunwayDay: number; history: { name: string; day: number; outcome: 'ovation' | 'good' | 'panned' }[] };
+}
+
+export interface ShowBooking {
+  id: string;
+  name: string;
+  /** fashion week id, or 'runway' for your own show */
+  weekId: string;
+  budget: ShowBudget;
+  day: number;
+}
+
+export interface Corporate {
+  /** percent of the company you still own */
+  ownership: number;
+  rounds: string[];
+  target: { value: number; byDay: number; round: string } | null;
+  ipo: { day: number } | null;
+  sentiment: number;
+  sharePrice: number[];
+  lastEarningsDay: number;
+  lastQuarterRevenue: number;
+  subsidiaries: { rivalId: string; name: string; weeklyIncome: number; day: number }[];
 }
 
 export type RivalPersonality = 'copycat' | 'snob' | 'hype' | 'eco' | 'heritage' | 'chaos';
@@ -272,7 +300,7 @@ export type GameEvent =
   | { type: 'scandal'; factoryId: FactoryId; repLoss: number }
   | { type: 'dropResult'; dropId: string; designId: string; result: DropResult }
   | { type: 'dropPostponed'; dropId: string; designId: string; newDay: number }
-  | { type: 'bills'; total: number; rent: number; platform: number; storage: number; salaries: number }
+  | { type: 'bills'; total: number; rent: number; platform: number; storage: number; salaries: number; markets?: number }
   | { type: 'overdrawn'; graceDays: number }
   | { type: 'recovered' }
   | { type: 'bankrupt' }
@@ -292,4 +320,8 @@ export type GameEvent =
   | { type: 'staffLevelUp'; name: string; skill: number }
   | { type: 'autoRestock'; designId: string; units: number }
   | { type: 'campaignWon' }
-  | { type: 'campaignEnded'; rank: number };
+  | { type: 'campaignEnded'; rank: number }
+  | { type: 'earnings'; beat: boolean; price: number }
+  | { type: 'investorTarget'; met: boolean; round: string }
+  | { type: 'showResult'; name: string; outcome: 'ovation' | 'good' | 'panned'; text: string }
+  | { type: 'subsidiaryIncome'; amount: number };

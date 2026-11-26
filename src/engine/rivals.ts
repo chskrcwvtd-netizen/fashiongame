@@ -1,12 +1,13 @@
 import { RIVALS } from './content';
 import { chance, pick, randRange } from './rng';
+import { room } from './audience';
 import { categoryIds, trendPop, displayName } from './trends';
 import type { GameEvent, GameState, Rival, TrendCategory } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Audience ceiling per rival (their growth slows toward it). */
-const RIVAL_CAP: Record<string, number> = { krush: 60000, velour: 320000, hexpark: 80000, moss: 90000, pylon: 260000, faithful: 520000 };
+const RIVAL_CAP: Record<string, number> = { krush: 80000, velour: 900000, hexpark: 120000, moss: 200000, pylon: 700000, faithful: 1600000 };
 
 export function initRivals(): Rival[] {
   return RIVALS.map((d) => ({
@@ -150,7 +151,7 @@ export function shoutOutRival(state: GameState, rivalId: string): { ok: true; te
   r.lastActionDay = state.day;
   r.relation = clamp(r.relation + 25, -100, 100);
   state.reputation = clamp(state.reputation + 1, 0, 100);
-  const gained = Math.round(r.followers * 0.003 * Math.max(0.02, 1 - state.followers / 120000));
+  const gained = Math.round(r.followers * 0.003 * room(state));
   state.followers += gained;
   return { ok: true, text: `${r.name} returned the love. +${gained} followers from their crowd.` };
 }

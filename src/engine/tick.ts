@@ -15,6 +15,8 @@ import { processReceivables, weeklyWholesale } from './wholesale';
 import { placeOrder, incomingUnits } from './production';
 import { availableUnits } from './webshop';
 import { STAGE3 } from './content';
+import { weeklyCorporate } from './corporate';
+import { processShows } from './shows';
 import type { GameEvent, GameState } from './types';
 
 /** Advance the simulation by one in-game day. Returns what happened. */
@@ -42,7 +44,9 @@ export function advanceDay(state: GameState): GameEvent[] {
     weeklyTeam(state, events);
     weeklyRivals(state, events);
     weeklyWholesale(state, events);
+    weeklyCorporate(state, events);
   }
+  processShows(state, events);
   processReceivables(state, events);
   autoRestock(state, events);
   processProduction(state, events);

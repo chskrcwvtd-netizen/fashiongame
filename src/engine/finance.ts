@@ -1,6 +1,7 @@
 import { DIFFICULTIES, ECON, HQ_LEVELS } from './content';
 import { stockUnits } from './production';
 import { managerBillMult, weeklySalaries } from './team';
+import { marketsWeekly } from './world';
 import type { GameEvent, GameState } from './types';
 
 export function weeklyBillEstimate(state: GameState) {
@@ -10,7 +11,8 @@ export function weeklyBillEstimate(state: GameState) {
   const platform = ECON.platformFeeWeekly * mult * mgr;
   const storage = stockUnits(state) * ECON.storagePerUnitWeekly * mult;
   const salaries = weeklySalaries(state);
-  return { rent, platform, storage, salaries, total: rent + platform + storage + salaries };
+  const markets = marketsWeekly(state) * mgr;
+  return { rent, platform, storage, salaries, markets, total: rent + platform + storage + salaries + markets };
 }
 
 export function chargeWeeklyBills(state: GameState, events: GameEvent[]): void {
@@ -20,7 +22,7 @@ export function chargeWeeklyBills(state: GameState, events: GameEvent[]): void {
   state.stats.weeklyRevenue.push(Math.round(state.stats.revenueThisWeek));
   if (state.stats.weeklyRevenue.length > 26) state.stats.weeklyRevenue.shift();
   state.stats.revenueThisWeek = 0;
-  events.push({ type: 'bills', total: b.total, rent: b.rent, platform: b.platform, storage: b.storage, salaries: b.salaries });
+  events.push({ type: 'bills', total: b.total, rent: b.rent, platform: b.platform, storage: b.storage, salaries: b.salaries, markets: b.markets });
 }
 
 export function updateSolvency(state: GameState, events: GameEvent[]): void {

@@ -1,11 +1,12 @@
 import type { GameState } from './types';
 
 import { PATTERN_VIBE } from './content';
-import { stage2Defaults, stage3Defaults } from './newGame';
+import { stage2Defaults, stage3Defaults, stage4Defaults } from './newGame';
+import { ensureTrendValues } from './trends';
 import { refreshCandidates } from './team';
 import { initTrends } from './trends';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** Bring a Stage 1 save up to date. */
 function migrateV1(data: Record<string, unknown>): Record<string, unknown> {
@@ -18,6 +19,13 @@ function migrateV1(data: Record<string, unknown>): Record<string, unknown> {
   for (const d of s.designs) if (!d.vibe) d.vibe = PATTERN_VIBE[d.pattern] ?? 'y2k';
   s.trends = initTrends(s);
   refreshCandidates(s);
+  return s as unknown as Record<string, unknown>;
+}
+
+/** Bring a Stage 3 save up to date. */
+function migrateV3(data: Record<string, unknown>): Record<string, unknown> {
+  const s = { ...stage4Defaults(), ...data, version: 4 } as unknown as GameState;
+  ensureTrendValues(s, s.trends);
   return s as unknown as Record<string, unknown>;
 }
 
@@ -51,6 +59,7 @@ export function deserialize(text: string): GameState {
   if (!isObj(data)) throw new Error('Save file is damaged.');
   if (data.version === 1 && Array.isArray(data.designs)) data = migrateV1(data);
   if (isObj(data) && data.version === 2 && Array.isArray(data.designs)) data = migrateV2(data);
+  if (isObj(data) && data.version === 3 && Array.isArray(data.designs)) data = migrateV3(data);
   if (!isObj(data)) throw new Error('Save file is damaged.');
   if (data.version !== SAVE_VERSION) throw new Error('This save comes from an unknown version of the game.');
   const numbers = ['seed', 'rngState', 'day', 'cash', 'followers', 'hype', 'reputation', 'hqLevel', 'nextId', 'lastTeaserDay'];
@@ -58,7 +67,7 @@ export function deserialize(text: string): GameState {
   if (!isObj(data.brand) || typeof data.brand.name !== 'string') throw new Error('Save file is damaged (brand).');
   for (const k of ['designs', 'orders', 'drops', 'employees', 'candidates', 'boosts', 'pendingEvents']) if (!Array.isArray(data[k])) throw new Error(`Save file is damaged (${k}).`);
   for (const k of ['rivals', 'unlocks', 'scheduledEvents']) if (!Array.isArray(data[k])) throw new Error(`Save file is damaged (${k}).`);
-  for (const k of ['inventory', 'listings', 'stats', 'flags', 'trends', 'posts', 'wholesale', 'milestones', 'campaign', 'history']) if (!isObj(data[k])) throw new Error(`Save file is damaged (${k}).`);
+  for (const k of ['inventory', 'listings', 'stats', 'flags', 'trends', 'posts', 'wholesale', 'milestones', 'campaign', 'history', 'cities', 'corporate', 'shows']) if (!isObj(data[k])) throw new Error(`Save file is damaged (${k}).`);
   if (!['easy', 'normal', 'hard'].includes(data.difficulty as string)) throw new Error('Save file is damaged (difficulty).');
   return data as unknown as GameState;
 }

@@ -1,4 +1,6 @@
 import type {
+  CityId,
+  ShowBudget,
   BadgeId,
   FinishId,
   RivalPersonality,
@@ -38,9 +40,13 @@ export const GARMENTS: Record<GarmentId, GarmentDef> = {
   cap: { id: 'cap', name: 'Cap', refPrice: 30, baseCost: 5, demand: 0.9, seasonal: [1.15, 1.3, 0.85, 0.6], taste: 0.55 },
   beanie: { id: 'beanie', name: 'Beanie', refPrice: 25, baseCost: 4, demand: 0.8, seasonal: [0.6, 0.3, 1.2, 1.7], taste: 0.5 },
   track: { id: 'track', name: 'Track Jacket', refPrice: 90, baseCost: 17, demand: 0.7, seasonal: [1.2, 0.8, 1.1, 0.8], taste: 0.55 },
+  sneakers: { id: 'sneakers', name: 'Sneakers', refPrice: 140, baseCost: 28, demand: 0.65, seasonal: [1.1, 1.0, 1.0, 0.9], taste: 0.7 },
+  bag: { id: 'bag', name: 'Bag', refPrice: 110, baseCost: 20, demand: 0.55, seasonal: [1.0, 1.0, 1.0, 1.0], taste: 0.55 },
+  jewelry: { id: 'jewelry', name: 'Chain', refPrice: 120, baseCost: 15, demand: 0.5, seasonal: [1.0, 1.0, 1.0, 1.1], taste: 0.6 },
+  perfume: { id: 'perfume', name: 'Perfume', refPrice: 85, baseCost: 8, demand: 0.7, seasonal: [0.9, 0.9, 1.1, 1.4], taste: 0.6 },
 };
-/** Pieces that must be unlocked by a milestone first. */
-export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track' };
+/** Pieces that must be unlocked first (milestone or product-line investment). */
+export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track', sneakers: 'line_sneakers', bag: 'line_bag', jewelry: 'line_jewelry', perfume: 'line_perfume' };
 export const GARMENT_IDS = Object.keys(GARMENTS) as GarmentId[];
 
 export interface ColorDef {
@@ -165,6 +171,7 @@ export const HQ_LEVELS: HqLevelDef[] = [
   { level: 0, name: 'Budapest Basement', rent: 200, capacity: 500, visitorMult: 1, upgradeCost: 0, walkIn: 0 },
   { level: 1, name: 'Studio', rent: 600, capacity: 2000, visitorMult: 1.1, upgradeCost: 8000, walkIn: 0 },
   { level: 2, name: 'Flagship Store', rent: 2000, capacity: 8000, visitorMult: 1.25, upgradeCost: 60000, walkIn: 25 },
+  { level: 3, name: 'Glass Tower', rent: 8000, capacity: 50000, visitorMult: 1.4, upgradeCost: 500000, walkIn: 60 },
 ];
 
 export interface DifficultyDef {
@@ -351,11 +358,11 @@ export interface RivalDef {
 
 export const RIVALS: RivalDef[] = [
   { id: 'krush', name: 'KRUSHLAB', personality: 'copycat', vibe: 'y2k', color: '#ff7a1a', glyph: 'bolt', followers: 900, weeklyRevenue: 1200, growth: 0.022, bio: 'Sees your hit, ships it cheaper two weeks later.' },
-  { id: 'velour', name: 'Velour Syndicate', personality: 'snob', vibe: 'luxury', color: '#e8e1cf', glyph: 'wings', followers: 90000, weeklyRevenue: 150000, growth: 0.011, bio: 'Old money pretending to be underground.' },
+  { id: 'velour', name: 'Velour Syndicate', personality: 'snob', vibe: 'luxury', color: '#e8e1cf', glyph: 'wings', followers: 150000, weeklyRevenue: 260000, growth: 0.013, bio: 'Old money pretending to be underground.' },
   { id: 'hexpark', name: 'Hexpark', personality: 'chaos', vibe: 'cyber', color: '#19c7ff', glyph: 'alien', followers: 6000, weeklyRevenue: 7000, growth: 0.02, bio: 'Glitch-cult collective. Unpredictable drops.' },
   { id: 'moss', name: 'Moss Theory', personality: 'eco', vibe: 'gorpcore', color: '#5d6534', glyph: 'flame', followers: 15000, weeklyRevenue: 18000, growth: 0.012, bio: 'Recycled fleece and moral high ground.' },
   { id: 'pylon', name: 'Saint Pylon', personality: 'hype', vibe: 'techwear', color: '#ff2fb4', glyph: 'skull', followers: 40000, weeklyRevenue: 60000, growth: 0.019, bio: 'Every drop is an event. Every event is a drop.' },
-  { id: 'faithful', name: 'Old Faithful Athletic', personality: 'heritage', vibe: 'retro', color: '#b3121f', glyph: 'star', followers: 200000, weeklyRevenue: 300000, growth: 0.009, bio: 'Forty-year-old sportswear giant. Slow, rich, everywhere.' },
+  { id: 'faithful', name: 'Old Faithful Athletic', personality: 'heritage', vibe: 'retro', color: '#b3121f', glyph: 'star', followers: 350000, weeklyRevenue: 650000, growth: 0.012, bio: 'Forty-year-old sportswear giant. Slow, rich, everywhere.' },
 ];
 
 export interface StoreDef {
@@ -385,4 +392,70 @@ export const STAGE3 = {
   collectionBonus: 0.08,
   collectionMin: 3,
   xpPerLevelBase: 6,
+};
+
+// ---------------------------------------------------------------- stage 4
+
+
+export interface CityDef {
+  id: CityId;
+  name: string;
+  /** position on the world map, 0..1000 x 0..500 */
+  x: number;
+  y: number;
+  vibes: VibeId[];
+  blurb: string;
+  shipCost: number;
+  shipWeekly: number;
+  storeCost: number;
+  storeRent: number;
+  capShip: number;
+  capStore: number;
+}
+
+export const CITIES: CityDef[] = [
+  { id: 'london', name: 'London', x: 478, y: 128, vibes: ['grunge', 'luxury'], blurb: 'Rain, grime and old money.', shipCost: 50000, shipWeekly: 1200, storeCost: 450000, storeRent: 8000, capShip: 80000, capStore: 160000 },
+  { id: 'paris', name: 'Paris', x: 492, y: 146, vibes: ['luxury', 'y2k'], blurb: 'Fashion capital. Snobby, rich, picky.', shipCost: 60000, shipWeekly: 1400, storeCost: 550000, storeRent: 9000, capShip: 70000, capStore: 150000 },
+  { id: 'tokyo', name: 'Tokyo', x: 868, y: 192, vibes: ['techwear', 'cyber'], blurb: 'Obsessive collectors, endless detail.', shipCost: 70000, shipWeekly: 1600, storeCost: 625000, storeRent: 10000, capShip: 120000, capStore: 240000 },
+  { id: 'la', name: 'Los Angeles', x: 172, y: 200, vibes: ['skate', 'gorpcore'], blurb: 'Skate parks and influencer mansions.', shipCost: 60000, shipWeekly: 1400, storeCost: 500000, storeRent: 9000, capShip: 130000, capStore: 260000 },
+  { id: 'seoul', name: 'Seoul', x: 836, y: 184, vibes: ['y2k', 'techwear'], blurb: 'Trends move at light speed.', shipCost: 56000, shipWeekly: 1300, storeCost: 475000, storeRent: 8400, capShip: 90000, capStore: 180000 },
+];
+export const BUDAPEST = { x: 528, y: 150 };
+
+export const PRODUCT_LINES: { id: string; garment: GarmentId; name: string; cost: number; blurb: string }[] = [
+  { id: 'line_sneakers', garment: 'sneakers', name: 'Sneakers', cost: 40000, blurb: 'The holy grail of hype. Pricey to make, everyone wants them.' },
+  { id: 'line_bag', garment: 'bag', name: 'Bags', cost: 60000, blurb: 'Crossbody bags. Steady sellers all year.' },
+  { id: 'line_jewelry', garment: 'jewelry', name: 'Jewelry', cost: 90000, blurb: 'Chains and pendants. Small, cheap to ship, big markup.' },
+  { id: 'line_perfume', garment: 'perfume', name: 'Perfume', cost: 150000, blurb: 'Cheap to make, huge margins, gift season gold.' },
+];
+
+export const FUNDING_ROUNDS: { id: string; name: string; minValue: number; amount: number; pct: number }[] = [
+  { id: 'seed', name: 'Seed round', minValue: 1_000_000, amount: 250_000, pct: 10 },
+  { id: 'a', name: 'Series A', minValue: 5_000_000, amount: 1_500_000, pct: 15 },
+  { id: 'b', name: 'Series B', minValue: 20_000_000, amount: 6_000_000, pct: 15 },
+];
+
+export const STAGE4 = {
+  ipoMinValue: 40_000_000,
+  ipoFloat: 0.2,
+  shares: 1_000_000,
+  growthTarget: 1.6,
+  acquireRatio: 1.5,
+  acquirePriceShare: 0.6,
+  subsidiaryShare: 0.3,
+  runwayCooldown: 60,
+  towerCities: 2,
+};
+
+export const FASHION_WEEKS: { id: string; name: string; city: CityId | null; weekOfYear: number; minRep: number }[] = [
+  { id: 'danube', name: 'Danube Fashion Week', city: null, weekOfYear: 8, minRep: 30 },
+  { id: 'tokyo', name: 'Tokyo Neon Week', city: 'tokyo', weekOfYear: 16, minRep: 45 },
+  { id: 'paris', name: 'Paris Atelier Week', city: 'paris', weekOfYear: 36, minRep: 55 },
+  { id: 'la', name: 'LA Concrete Week', city: 'la', weekOfYear: 46, minRep: 40 },
+];
+
+export const SHOW_BUDGETS: Record<ShowBudget, { name: string; cost: number; mult: number }> = {
+  small: { name: 'Scrappy', cost: 15000, mult: 0.8 },
+  medium: { name: 'Proper', cost: 40000, mult: 1.0 },
+  big: { name: 'Spectacle', cost: 100000, mult: 1.25 },
 };

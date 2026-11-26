@@ -3,6 +3,7 @@ import { fairPrice, getDesign } from './design';
 import { newId } from './newGame';
 import { chance, pick, randInt, randRange } from './rng';
 import { availableUnits } from './webshop';
+import { room } from './audience';
 import type { ActionResult, GameEvent, GameState } from './types';
 
 export function wholesaleUnlocked(state: GameState): boolean {
@@ -59,7 +60,7 @@ export function acceptOffer(state: GameState, offerId: string): ActionResult {
     dueDay: state.day + o.payDays,
     defaultRisk: store.risk * DIFFICULTIES[state.difficulty].badEventMult,
   });
-  state.followers += Math.round(o.units * 0.3 * Math.max(0.02, 1 - state.followers / 120000));
+  state.followers += Math.round(o.units * 0.3 * room(state));
   return { ok: true };
 }
 

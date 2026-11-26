@@ -237,7 +237,7 @@ describe('campaign and save v3', () => {
     delete v2.designs[0].back;
     delete v2.designs[0].backText;
     const m = deserialize(JSON.stringify(v2));
-    expect(m.version).toBe(3);
+    expect(m.version).toBe(4);
     expect(m.rivals.length).toBe(6);
     expect(m.designs[0].finish).toBe('print');
     for (let i = 0; i < 14; i++) advanceDay(m);

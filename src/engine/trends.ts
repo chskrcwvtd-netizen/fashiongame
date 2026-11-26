@@ -50,7 +50,7 @@ const FLOOR = 0.06;
 
 function scheduleIgnition(h: RngHolder, t: TrendState, cat: TrendCategory, week: number) {
   const taken = new Set(t.upcoming.filter((u) => u.cat === cat).map((u) => u.id));
-  const cold = categoryIds(cat).filter((id) => t.values[cat][id].pop < 0.45 && t.values[cat][id].vel <= 0.01 && !taken.has(id));
+  const cold = categoryIds(cat).filter((id) => t.values[cat][id] && t.values[cat][id].pop < 0.45 && t.values[cat][id].vel <= 0.01 && !taken.has(id));
   if (cold.length === 0) return;
   t.upcoming.push({ cat, id: pick(h, cold), week, vel: randRange(h, 0.07, 0.13) });
 }
@@ -95,10 +95,25 @@ function stepValue(v: TrendValue, h: RngHolder | null, taste: number) {
   v.pop = clamp(v.pop, FLOOR, 1);
 }
 
+/** Make sure every value has trend data (new pieces arrive in later versions). */
+export function ensureTrendValues(h: RngHolder, t: TrendState): void {
+  for (const cat of TREND_CATEGORIES) {
+    t.values[cat] = t.values[cat] ?? {};
+    t.last[cat] = t.last[cat] ?? {};
+    for (const id of categoryIds(cat)) {
+      if (!t.values[cat][id]) {
+        t.values[cat][id] = { pop: clamp(baseTaste(cat, id) * 0.55 + randRange(h, 0, 0.2), FLOOR, 0.8), vel: 0, peakWeeks: 0 };
+        t.last[cat][id] = t.values[cat][id].pop;
+      }
+    }
+  }
+}
+
 export function weeklyTrendUpdate(state: GameState, events: GameEvent[]): void {
   const t = state.trends;
+  ensureTrendValues(state, t);
   const week = dateInfo(state.day).week;
-  for (const cat of TREND_CATEGORIES) for (const id of categoryIds(cat)) t.last[cat][id] = t.values[cat][id].pop;
+  for (const cat of TREND_CATEGORIES) for (const id of categoryIds(cat)) t.last[cat][id] = t.values[cat][id]?.pop ?? 0.3;
   const due = t.upcoming.filter((u) => u.week <= week);
   t.upcoming = t.upcoming.filter((u) => u.week > week);
   for (const ign of due) {
@@ -136,7 +151,7 @@ export function forecast(state: GameState, weeks: number): Record<TrendCategory,
   for (const cat of TREND_CATEGORIES) {
     out[cat] = {};
     for (const id of categoryIds(cat)) {
-      const v = { ...state.trends.values[cat][id] };
+      const v = { ...(state.trends.values[cat][id] ?? { pop: 0.3, vel: 0, peakWeeks: 0 }) };
       const series: number[] = [];
       for (let k = 1; k <= weeks; k++) {
         const ign = state.trends.upcoming.find((u) => u.cat === cat && u.id === id && u.week === week + k);

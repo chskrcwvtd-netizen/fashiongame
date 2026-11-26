@@ -40,6 +40,11 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'units_10k', title: '10,000 pieces', desc: 'Ten thousand pieces sold.', reward: '$5,000 bonus', check: (s) => s.stats.unitsSold >= 10000, grant: cash(5000) },
   { id: 'revenue_1m', title: 'First million', desc: '$1,000,000 in total revenue.', reward: 'Gold plaque in the HQ', check: (s) => s.stats.revenue >= 1_000_000, grant: () => {} },
   { id: 'followers_100k', title: '100k followers', desc: 'A hundred thousand followers.', reward: '+10 reputation', check: (s) => s.followers >= 100000, grant: (s) => (s.reputation = clamp(s.reputation + 10, 0, 100)) },
+  { id: 'first_city', title: 'Passport', desc: 'Started shipping abroad.', reward: '+10 hype', check: (s) => Object.keys(s.cities ?? {}).length > 0, grant: (s) => (s.hype = clamp(s.hype + 10, 0, 100)) },
+  { id: 'first_acquisition', title: 'Takeover', desc: 'Bought a rival brand.', reward: '+5 reputation', check: (s) => (s.corporate?.subsidiaries.length ?? 0) > 0, grant: (s) => (s.reputation = clamp(s.reputation + 5, 0, 100)) },
+  { id: 'tower', title: 'Glass Tower', desc: 'Moved into the Glass Tower.', reward: '+10 reputation', check: (s) => s.hqLevel >= 3, grant: (s) => (s.reputation = clamp(s.reputation + 10, 0, 100)) },
+  { id: 'ipo', title: 'Ring the bell', desc: 'Went public.', reward: '+20 hype', check: (s) => !!s.corporate?.ipo, grant: (s) => (s.hype = clamp(s.hype + 20, 0, 100)) },
+  { id: 'ovation', title: 'Standing ovation', desc: 'A show got a standing ovation.', reward: '$10,000 bonus', check: (s) => !!s.shows?.history.some((h) => h.outcome === 'ovation'), grant: cash(10000) },
   { id: 'number_one', title: 'Number one', desc: 'The biggest brand on the chart.', reward: 'The crown', check: (_s, rank) => rank === 1, grant: () => {} },
 ];
 

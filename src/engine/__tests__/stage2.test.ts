@@ -290,7 +290,7 @@ describe('save v2', () => {
     for (const k of ['trends', 'employees', 'candidates', 'posts', 'boosts', 'influencerCampaign', 'collab', 'pendingEvents', 'lastEventDay', 'lastTeamNight', 'supplierDiscountUntil']) delete v1[k];
     delete v1.designs[0].vibe;
     const m = deserialize(JSON.stringify(v1));
-    expect(m.version).toBe(3);
+    expect(m.version).toBe(4);
     expect(m.cash).toBe(s.cash);
     expect(m.designs[0].vibe).toBe('gorpcore');
     expect(m.candidates.length).toBe(4);

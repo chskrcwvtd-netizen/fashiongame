@@ -20,3 +20,7 @@ export * from './rivals';
 export * from './wholesale';
 export * from './milestones';
 export * from './comments';
+export * from './audience';
+export * from './world';
+export * from './corporate';
+export * from './shows';

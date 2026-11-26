@@ -9,6 +9,10 @@ import { advanceDay } from '../tick';
 import { currentEvent, defaultOption, resolveEvent } from '../events';
 import { postSocial, postsLeft } from '../marketing';
 import { hire, staffSlots } from '../team';
+import { CITIES } from '../content';
+import { cityCost, cityRequirement, expandCity } from '../world';
+import { canIpo, goPublic, nextRound, raiseRound } from '../corporate';
+import { brandValue } from '../rivals';
 import type { DesignInput, DifficultyId, GameState } from '../types';
 
 export type Strategy = 'smart' | 'sloppy' | 'reckless' | 'idle';
@@ -75,6 +79,18 @@ function smartDay(s: GameState) {
   // stage 2: post every day, staff up once there is room and money
   while (!process.env.NOPOST && postsLeft(s) > 0) {
     if (!postSocial(s, { platform: 'loopz', kind: 'fit', designId: focus[0].id }).ok) break;
+  }
+  // stage 4: expand abroad, raise money, go public
+  if (!process.env.NOWORLD) {
+    for (const c of CITIES) {
+      if (!cityRequirement(s, c) && s.cash > cityCost(s, c) * 2.5) {
+        expandCity(s, c.id);
+        break;
+      }
+    }
+    const r = nextRound(s);
+    if (r && brandValue(s) >= r.minValue && !s.corporate.target) raiseRound(s);
+    if (!canIpo(s)) goPublic(s);
   }
   if (!process.env.NOHIRE && s.hqLevel >= 1 && s.employees.length < Math.min(3, staffSlots(s)) && s.cash > 15000) {
     const want = ['designer', 'sourcer', 'marketer'].find((r) => !s.employees.some((e) => e.role === r));

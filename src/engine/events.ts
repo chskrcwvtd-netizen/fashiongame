@@ -1,3 +1,4 @@
+import { room } from './audience';
 import { ARTISTS, DIFFICULTIES, FACTORIES, INFLUENCERS, STAGE2 } from './content';
 import { dateInfo } from './calendar';
 import { fairPrice, getDesign } from './design';
@@ -9,7 +10,6 @@ import type { FactoryId, GameEvent, GameState, PendingEvent } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
-const room = (s: GameState) => Math.max(0.02, 1 - s.followers / 120000);
 const cm = (s: GameState) => DIFFICULTIES[s.difficulty].costMult;
 const stock = (s: GameState) => Object.values(s.inventory).reduce((a, l) => a + l.units, 0);
 type P = PendingEvent['params'];
@@ -37,6 +37,12 @@ export interface EventDef {
 /** Schedule a follow-up event `inDays` from now (chained consequences). */
 export function scheduleEvent(s: GameState, defId: string, inDays: number, params: P = {}) {
   s.scheduledEvents.push({ defId, day: s.day + Math.max(1, Math.round(inDays)), params });
+}
+
+function brandValueLite(s: GameState) {
+  const w = s.stats.weeklyRevenue.slice(-13);
+  const annual = w.length ? (w.reduce((a, x) => a + x, 0) / w.length) * 52 : 0;
+  return annual * 1.5 + s.followers * 4 + Math.max(0, s.cash) * 0.15 + s.reputation * 800;
 }
 
 function rivalName(s: GameState, id: string | number | undefined) {
@@ -737,6 +743,43 @@ export const EVENTS: EventDef[] = [
       { label: 'Too busy', hint: 'Nothing happens', apply: () => 'Maybe next season.' },
     ],
   },
+  {
+    id: 'board_pressure',
+    tone: 'bad',
+    internal: true,
+    weight: () => 0,
+    title: () => 'The board is not happy',
+    body: (_s, p) => `Your ${p.round ?? 'investors'} backers expected faster growth. They want changes, now.`,
+    options: () => [
+      {
+        label: 'Cut costs',
+        hint: 'Team mood down, investors calm',
+        apply: (s) => {
+          for (const e of s.employees) e.mood = clamp(e.mood - 12, 0, 100);
+          return 'Budgets slashed. The office is quiet. The board is satisfied, for now.';
+        },
+      },
+      {
+        label: 'Promise bigger growth',
+        hint: 'Hype up, but they will check again',
+        apply: (s) => {
+          s.hype = clamp(s.hype + 10, 0, 100);
+          s.corporate.target = { value: Math.round(brandValueLite(s) * 1.4), byDay: s.day + 182, round: 'board' };
+          return 'Big promises. You have six months to deliver.';
+        },
+      },
+      {
+        label: 'Buy back 5% of the company',
+        hint: 'Costs cash, you own more',
+        blocked: (s) => (s.cash < brandValueLite(s) * 0.06 ? 'Not enough cash.' : null),
+        apply: (s) => {
+          pay(s, brandValueLite(s) * 0.06);
+          s.corporate.ownership = Math.min(100, s.corporate.ownership + 5);
+          return 'You bought them out a little. Fewer voices at the table.';
+        },
+      },
+    ],
+  },
   // ---------------------------------------------------------------- rivals
   {
     id: 'rival_copy',
@@ -783,7 +826,7 @@ export const EVENTS: EventDef[] = [
   {
     id: 'rival_diss',
     tone: 'bad',
-    weight: (s) => (s.rivals.some((r) => r.relation < -20) ? 0.6 : 0.15),
+    weight: (s) => (s.rivals.length === 0 ? 0 : s.rivals.some((r) => r.relation < -20) ? 0.6 : 0.15),
     params: (s) => ({ rivalId: [...s.rivals].sort((a, b) => a.relation - b.relation)[0].id }),
     title: (s, p) => `${rivalName(s, p.rivalId)} took a shot at you`,
     body: (s, p) => `${rivalName(s, p.rivalId)} posted a meme calling your brand "a basement hobby". It is getting a lot of likes.`,
@@ -829,7 +872,7 @@ export const EVENTS: EventDef[] = [
     tone: 'bad',
     weight: (s) => {
       const d = s.drops.find((x) => x.status === 'scheduled');
-      return d && !d.clash && d.dropDay - s.day >= 2 ? 0.8 : 0;
+      return d && !d.clash && d.dropDay - s.day >= 2 && s.rivals.some((r) => r.personality !== 'heritage') ? 0.8 : 0;
     },
     params: (s) => ({ rivalId: pick(s, s.rivals.filter((r) => r.personality !== 'heritage')).id }),
     title: (s, p) => `${rivalName(s, p.rivalId)} is dropping the same day`,

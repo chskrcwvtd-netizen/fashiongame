@@ -2,11 +2,13 @@ import { DIFFICULTIES, ECON, GARMENTS, HQ_LEVELS } from './content';
 import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './design';
 import { poisson } from './rng';
 import { visitorMult } from './marketing';
+import { engagedFollowers, room } from './audience';
+import { localBonus, worldVisitorMult, worldWalkIns } from './world';
 import type { ActionResult, GameEvent, GameState } from './types';
 
-/** 1 → 0 as followers approach the market ceiling. */
+/** 1 → 0 as followers approach the market ceiling (home market plus cities abroad). */
 export function growthRoom(state: GameState): number {
-  return Math.max(0.02, 1 - state.followers / ECON.homeMarketCap);
+  return room(state);
 }
 
 /** Units of this design reserved for a scheduled drop. */
@@ -46,7 +48,7 @@ export function setListing(state: GameState, designId: string, price: number, ac
 
 export function dailyVisitors(state: GameState): number {
   const hq = HQ_LEVELS[state.hqLevel];
-  return (ECON.baseVisitors + state.followers * ECON.visitorsPerFollower + hq.walkIn) * hq.visitorMult * (1 + state.hype / 100) * visitorMult(state);
+  return (ECON.baseVisitors + engagedFollowers(state.followers) * ECON.visitorsPerFollower + hq.walkIn + worldWalkIns(state)) * hq.visitorMult * (1 + state.hype / 100) * visitorMult(state) * worldVisitorMult(state);
 }
 
 function activeListings(state: GameState) {
@@ -74,7 +76,8 @@ export function expectedDailySales(state: GameState, designId: string, priceOver
     priceFactor(fairPrice(state, design, quality), price, ECON.priceElasticity) *
     seasonFactor(state, design) *
     g.demand *
-    DIFFICULTIES[state.difficulty].demandMult
+    DIFFICULTIES[state.difficulty].demandMult *
+    localBonus(state, design)
   );
 }
 
