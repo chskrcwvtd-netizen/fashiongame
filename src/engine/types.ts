@@ -1,7 +1,7 @@
 export type DifficultyId = 'easy' | 'normal' | 'hard';
-export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie';
+export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie' | 'track';
 export type MaterialId = 'basic' | 'standard' | 'premium' | 'luxe';
-export type FactoryId = 'fastloop' | 'danube' | 'nord';
+export type FactoryId = 'fastloop' | 'danube' | 'nord' | 'vela';
 export type PatternId = 'solid' | 'camo' | 'tiedye' | 'checker' | 'stripes' | 'flames' | 'grid' | 'gradient';
 export type GraphicKind = 'none' | 'text' | 'emblem';
 export type FontId = 'gothic' | 'bubble' | 'chrome' | 'graffiti';
@@ -16,9 +16,16 @@ export type TraitId = 'perfectionist' | 'hypebeast' | 'loyal' | 'diva' | 'chill'
 export type PlatformId = 'loopz' | 'glint';
 export type PostKind = 'fit' | 'bts' | 'meme' | 'teaser';
 
+export type FinishId = 'print' | 'embroidery' | 'washed' | 'distressed';
+export type BackPrint = 'none' | 'logo' | 'text';
+export type BadgeId = 'none' | 'circle' | 'diamond' | 'shield';
+
 export interface LogoChoice {
   glyph: EmblemId;
   color: ColorId;
+  /** wordmark font (stage 3; optional for older saves) */
+  font?: FontId;
+  badge?: BadgeId;
 }
 
 export interface DesignInput {
@@ -33,6 +40,9 @@ export interface DesignInput {
   emblem: EmblemId;
   material: MaterialId;
   vibe: VibeId;
+  finish: FinishId;
+  back: BackPrint;
+  backText: string;
 }
 
 export interface Design extends DesignInput {
@@ -54,6 +64,8 @@ export interface Listing {
   soldWeek: number;
   soldTotal: number;
   history: number[];
+  /** auto-reorder rule (needs a manager on the team) */
+  auto?: { factoryId: FactoryId; qty: number } | null;
 }
 
 export interface ProductionOrder {
@@ -90,6 +102,8 @@ export interface Drop {
   hype: number;
   status: 'scheduled' | 'done';
   postponements: number;
+  restock?: boolean;
+  clash?: boolean;
   result: DropResult | null;
 }
 
@@ -127,6 +141,7 @@ export interface Employee {
   hiredDay: number;
   lowMoodWeeks: number;
   lastPerk: number;
+  xp?: number;
 }
 
 export interface Boost {
@@ -160,10 +175,11 @@ export interface GameStats {
   weeklyRevenue: number[];
   peakCash: number;
   bestSellerId: string | null;
+  soldByDesign?: Record<string, number>;
 }
 
 export interface GameState {
-  version: 2;
+  version: 3;
   seed: number;
   rngState: number;
   day: number;
@@ -197,6 +213,52 @@ export interface GameState {
   lastEventDay: number;
   lastTeamNight: number;
   supplierDiscountUntil: number;
+  // ---- stage 3 ----
+  rivals: Rival[];
+  wholesale: { offers: WholesaleOffer[]; receivables: Receivable[] };
+  milestones: Record<string, number>;
+  unlocks: string[];
+  scheduledEvents: { defId: string; day: number; params: Record<string, string | number> }[];
+  campaign: { wonDay: number | null; endSeen: boolean; winSeen: boolean };
+  history: { followers: number[]; value: number[]; rank: number[] };
+}
+
+export type RivalPersonality = 'copycat' | 'snob' | 'hype' | 'eco' | 'heritage' | 'chaos';
+
+export interface Rival {
+  id: string;
+  name: string;
+  personality: RivalPersonality;
+  vibe: VibeId;
+  color: string;
+  glyph: string;
+  followers: number;
+  weeklyRevenue: number;
+  hype: number;
+  reputation: number;
+  relation: number;
+  focus: { cat: TrendCategory; id: string } | null;
+  lastDropDay: number;
+  prevRank: number;
+  lastActionDay: number;
+}
+
+export interface WholesaleOffer {
+  id: string;
+  storeId: string;
+  designId: string;
+  units: number;
+  unitPrice: number;
+  payDays: number;
+  expiresDay: number;
+}
+
+export interface Receivable {
+  id: string;
+  storeId: string;
+  amount: number;
+  dueDay: number;
+  defaultRisk: number;
 }
 
 export type ActionResult = { ok: true; id?: string } | { ok: false; reason: string };
@@ -221,4 +283,13 @@ export type GameEvent =
   | { type: 'staffWarning'; employeeId: string; name: string }
   | { type: 'staffQuit'; name: string; role: RoleId }
   | { type: 'trendShift'; text: string }
-  | { type: 'boostEnded'; source: string };
+  | { type: 'boostEnded'; source: string }
+  | { type: 'milestone'; id: string; title: string; reward: string }
+  | { type: 'rivalNews'; rivalId: string; text: string }
+  | { type: 'wholesalePaid'; storeId: string; amount: number }
+  | { type: 'wholesaleDefault'; storeId: string; amount: number }
+  | { type: 'wholesaleOffer'; storeId: string }
+  | { type: 'staffLevelUp'; name: string; skill: number }
+  | { type: 'autoRestock'; designId: string; units: number }
+  | { type: 'campaignWon' }
+  | { type: 'campaignEnded'; rank: number };

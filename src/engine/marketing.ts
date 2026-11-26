@@ -64,6 +64,7 @@ export function postSocial(state: GameState, input: PostInput): PostResult {
     text = 'The meme aged badly in about four minutes. People are dunking on you.';
   } else if (chance(state, viralChance(state, input))) {
     viral = true;
+    state.flags.firstViral = true;
     gained += Math.round((state.followers * randRange(state, 0.015, 0.04) + 60) * room(state));
     state.hype = clamp(state.hype + 8, 0, 100);
     text = `It went viral on ${platform.name}. Your phone will not stop buzzing.`;
@@ -125,6 +126,7 @@ export function signCollab(state: GameState, artistId: string): { ok: true } | {
   state.cash -= fee;
   state.stats.spent += fee;
   state.collab = { artistId: a.id, signedDay: state.day, used: false };
+  state.flags.firstCollab = true;
   state.hype = clamp(state.hype + 15, 0, 100);
   const drop = state.drops.find((d) => d.status === 'scheduled');
   if (drop) drop.hype = clamp(drop.hype + 25, 0, 100);

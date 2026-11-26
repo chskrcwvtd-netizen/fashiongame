@@ -194,6 +194,15 @@ export function weeklyTeam(state: GameState, events: GameEvent[]): void {
       e.lowMoodWeeks = 0;
     }
   }
+  for (const e of state.employees) {
+    if (leaving.includes(e) || e.skill >= 10) continue;
+    e.xp = (e.xp ?? 0) + 1 + (e.mood > 70 ? 1 : 0);
+    if (e.xp >= 6 + e.skill * 2) {
+      e.skill += 1;
+      e.xp = 0;
+      events.push({ type: 'staffLevelUp', name: e.name, skill: e.skill });
+    }
+  }
   for (const e of leaving) {
     state.employees = state.employees.filter((x) => x.id !== e.id);
     events.push({ type: 'staffQuit', name: e.name, role: e.role });

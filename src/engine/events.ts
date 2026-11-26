@@ -34,6 +34,15 @@ export interface EventDef {
   options: (s: GameState, p: P) => EventOption[];
 }
 
+/** Schedule a follow-up event `inDays` from now (chained consequences). */
+export function scheduleEvent(s: GameState, defId: string, inDays: number, params: P = {}) {
+  s.scheduledEvents.push({ defId, day: s.day + Math.max(1, Math.round(inDays)), params });
+}
+
+function rivalName(s: GameState, id: string | number | undefined) {
+  return s.rivals.find((r) => r.id === id)?.name ?? 'A rival brand';
+}
+
 function pay(s: GameState, amount: number) {
   s.cash -= amount;
   s.stats.spent += amount;
@@ -121,6 +130,7 @@ export const EVENTS: EventDef[] = [
           pay(s, 400 * cm(s));
           s.hype = clamp(s.hype + 18, 0, 100);
           s.flags[`favor_${p.artistId}`] = true;
+          if (chance(s, 0.7)) scheduleEvent(s, 'artist_returns', randInt(s, 18, 35), { artistId: p.artistId });
           return 'They posted the unboxing. A collab with them is now 40% cheaper.';
         },
       },
@@ -195,7 +205,7 @@ export const EVENTS: EventDef[] = [
     weight: () => 0,
     title: () => 'Sweatshop exposé',
     body: (_s, p) => `A blog post about working conditions at ${FACTORIES[p.factoryId as FactoryId]?.name} is going around, and your brand is tagged in it.`,
-    options: () => [
+    options: (_s, p) => [
       {
         label: 'Cut ties publicly',
         hint: `Costs ${money(1000)}, small reputation hit`,
@@ -222,7 +232,8 @@ export const EVENTS: EventDef[] = [
         apply: (s) => {
           if (chance(s, 0.5)) {
             s.reputation = clamp(s.reputation - 2, 0, 100);
-            return 'The story died in a day. Lucky.';
+            if (chance(s, 0.45)) scheduleEvent(s, 'receipts_leak', randInt(s, 20, 40), { factoryId: p.factoryId });
+            return 'The story died in a day. Lucky... for now.';
           }
           s.reputation = clamp(s.reputation - 20, 0, 100);
           s.followers = Math.round(s.followers * 0.94);
@@ -378,6 +389,7 @@ export const EVENTS: EventDef[] = [
         hint: 'Webshop traffic dips for two weeks',
         apply: (s) => {
           s.boosts.push({ kind: 'visitors', mult: 0.85, untilDay: s.day + 14, source: 'Counterfeits' });
+          if (chance(s, 0.6)) scheduleEvent(s, 'fakes_worse', randInt(s, 25, 40), {});
           return 'The fakes are eating some of your sales.';
         },
       },
@@ -456,6 +468,7 @@ export const EVENTS: EventDef[] = [
           s.reputation = clamp(s.reputation + 3, 0, 100);
           const g = Math.round(s.followers * 0.02 * room(s) + 50);
           s.followers += g;
+          if (chance(s, 0.4)) scheduleEvent(s, 'magazine_call', randInt(s, 30, 60), {});
           return `Nice piece. +${g} followers.`;
         },
       },
@@ -609,6 +622,254 @@ export const EVENTS: EventDef[] = [
       },
     ],
   },
+  // ---------------------------------------------------------------- follow-ups
+  {
+    id: 'artist_returns',
+    tone: 'good',
+    internal: true,
+    weight: () => 0,
+    title: (_s, p) => `${ARTISTS.find((a) => a.id === p.artistId)?.name} is in your DMs`,
+    body: (_s, p) => `Remember that free pack? ${ARTISTS.find((a) => a.id === p.artistId)?.name} loved it and wants to do a proper collab. They will do it for 40% less.`,
+    options: (_s, p) => [
+      {
+        label: 'Sign the collab',
+        hint: 'Uses the discount; powers up your next drop',
+        blocked: (s) => {
+          const a = ARTISTS.find((x) => x.id === p.artistId);
+          if (!a) return 'They moved on.';
+          if (s.collab) return 'You already have a collab lined up.';
+          return s.cash < a.fee * 0.6 * cm(s) ? 'Not enough cash.' : null;
+        },
+        apply: (s) => {
+          const a = ARTISTS.find((x) => x.id === p.artistId)!;
+          pay(s, a.fee * 0.6 * cm(s));
+          s.collab = { artistId: a.id, signedDay: s.day, used: false };
+          s.flags.firstCollab = true;
+          s.hype = clamp(s.hype + 15, 0, 100);
+          return `${a.name} × ${s.brand.name} is official. Plan a drop.`;
+        },
+      },
+      { label: 'Not right now', hint: 'Keep the door open', apply: () => 'You left them on read. Politely.' },
+    ],
+  },
+  {
+    id: 'receipts_leak',
+    tone: 'bad',
+    internal: true,
+    weight: () => 0,
+    title: () => 'The receipts came out',
+    body: (_s, p) => `Remember denying the ${FACTORIES[p.factoryId as FactoryId]?.name ?? 'factory'} story? A journalist found the invoices with your name on them.`,
+    options: () => [
+      {
+        label: 'Apologise properly',
+        hint: `Costs ${money(2000)} for an audit, reputation hit`,
+        blocked: needCash((s) => 2000 * cm(s)),
+        apply: (s) => {
+          pay(s, 2000 * cm(s));
+          s.reputation = clamp(s.reputation - 5, 0, 100);
+          return 'A real apology and an audit. People respect owning it.';
+        },
+      },
+      {
+        label: 'Double down',
+        hint: 'Very risky',
+        apply: (s) => {
+          if (chance(s, 0.35)) {
+            s.hype = clamp(s.hype + 10, 0, 100);
+            return 'Somehow it became a meme in your favour.';
+          }
+          s.reputation = clamp(s.reputation - 25, 0, 100);
+          s.followers = Math.round(s.followers * 0.92);
+          return 'That was a mistake. A big one.';
+        },
+      },
+    ],
+  },
+  {
+    id: 'fakes_worse',
+    tone: 'bad',
+    internal: true,
+    weight: () => 0,
+    title: () => 'The fakes multiplied',
+    body: () => 'Ignoring the counterfeits did not work. Now there are fake versions of half your catalogue online.',
+    options: () => [
+      {
+        label: 'Lawyers, now',
+        hint: `Costs ${money(3000)}`,
+        blocked: needCash((s) => 3000 * cm(s)),
+        apply: (s) => {
+          pay(s, 3000 * cm(s));
+          s.boosts = s.boosts.filter((b) => b.source !== 'Counterfeits');
+          return 'Takedowns everywhere. Your sales recover.';
+        },
+      },
+      {
+        label: 'Live with it',
+        hint: 'Webshop traffic down for three weeks, reputation hit',
+        apply: (s) => {
+          s.reputation = clamp(s.reputation - 5, 0, 100);
+          s.boosts.push({ kind: 'visitors', mult: 0.85, untilDay: s.day + 21, source: 'Counterfeits' });
+          return 'The fakes stay. So does the damage.';
+        },
+      },
+    ],
+  },
+  {
+    id: 'magazine_call',
+    tone: 'good',
+    internal: true,
+    weight: () => 0,
+    title: () => 'A print magazine called',
+    body: () => 'That blog interview got noticed. A real print fashion magazine wants a photo story about your brand.',
+    options: () => [
+      {
+        label: 'Do the shoot',
+        hint: `Costs ${money(1500)} for the shoot`,
+        blocked: needCash((s) => 1500 * cm(s)),
+        apply: (s) => {
+          pay(s, 1500 * cm(s));
+          s.reputation = clamp(s.reputation + 6, 0, 100);
+          const g = Math.round((s.followers * 0.03 + 300) * room(s));
+          s.followers += g;
+          return `Eight pages. +${g} followers and a lot more respect.`;
+        },
+      },
+      { label: 'Too busy', hint: 'Nothing happens', apply: () => 'Maybe next season.' },
+    ],
+  },
+  // ---------------------------------------------------------------- rivals
+  {
+    id: 'rival_copy',
+    tone: 'bad',
+    weight: (s) => (s.stats.bestSellerId && s.stats.unitsSold > 150 && s.rivals.some((r) => r.personality === 'copycat') ? 0.7 : 0),
+    params: (s) => ({ rivalId: s.rivals.find((r) => r.personality === 'copycat')!.id, designId: s.stats.bestSellerId! }),
+    title: (s, p) => `${rivalName(s, p.rivalId)} copied you`,
+    body: (s, p) => `${rivalName(s, p.rivalId)} just released something that looks exactly like ${designLabel(s, p.designId)}, for less.`,
+    options: (_s, p) => [
+      {
+        label: 'Call them out',
+        hint: 'Hype up, starts beef, could backfire',
+        apply: (s) => {
+          const r = s.rivals.find((x) => x.id === p.rivalId);
+          if (r) r.relation = clamp(r.relation - 30, -100, 100);
+          if (chance(s, 0.3)) {
+            s.reputation = clamp(s.reputation - 3, 0, 100);
+            return 'People said both pieces look generic. Ouch.';
+          }
+          s.hype = clamp(s.hype + 10, 0, 100);
+          return 'Side-by-side posts everywhere. Yours is the original and everyone knows it.';
+        },
+      },
+      {
+        label: 'Send a lawyer letter',
+        hint: `Costs ${money(1500)}`,
+        blocked: needCash((s) => 1500 * cm(s)),
+        apply: (s) => {
+          pay(s, 1500 * cm(s));
+          s.reputation = clamp(s.reputation + 1, 0, 100);
+          return 'They pulled it quietly.';
+        },
+      },
+      {
+        label: 'Ignore it',
+        hint: 'Some customers buy theirs instead',
+        apply: (s) => {
+          s.boosts.push({ kind: 'visitors', mult: 0.92, untilDay: s.day + 14, source: 'Copycat' });
+          return 'The copy is eating a little of your traffic.';
+        },
+      },
+    ],
+  },
+  {
+    id: 'rival_diss',
+    tone: 'bad',
+    weight: (s) => (s.rivals.some((r) => r.relation < -20) ? 0.6 : 0.15),
+    params: (s) => ({ rivalId: [...s.rivals].sort((a, b) => a.relation - b.relation)[0].id }),
+    title: (s, p) => `${rivalName(s, p.rivalId)} took a shot at you`,
+    body: (s, p) => `${rivalName(s, p.rivalId)} posted a meme calling your brand "a basement hobby". It is getting a lot of likes.`,
+    options: (_s, p) => [
+      {
+        label: 'Clap back',
+        hint: 'Hype, deeper beef, small risk',
+        apply: (s) => {
+          const r = s.rivals.find((x) => x.id === p.rivalId);
+          if (r) r.relation = clamp(r.relation - 20, -100, 100);
+          if (chance(s, 0.3)) {
+            s.reputation = clamp(s.reputation - 4, 0, 100);
+            return 'Your reply was weaker than their meme. They won this round.';
+          }
+          s.hype = clamp(s.hype + 12, 0, 100);
+          return 'Your reply went harder. The internet picked a side: yours.';
+        },
+      },
+      {
+        label: 'Take the high road',
+        hint: 'Reputation up',
+        apply: (s) => {
+          s.reputation = clamp(s.reputation + 3, 0, 100);
+          return 'No reply. Classy. The serious crowd noticed.';
+        },
+      },
+      {
+        label: 'Turn it into merch',
+        hint: `Costs ${money(800)}, hype and followers`,
+        blocked: needCash((s) => 800 * cm(s)),
+        apply: (s) => {
+          pay(s, 800 * cm(s));
+          s.hype = clamp(s.hype + 8, 0, 100);
+          const g = Math.round(s.followers * 0.02 * room(s) + 60);
+          s.followers += g;
+          return `"BASEMENT HOBBY" tees. People love it. +${g} followers.`;
+        },
+      },
+    ],
+  },
+  {
+    id: 'rival_same_day',
+    tone: 'bad',
+    weight: (s) => {
+      const d = s.drops.find((x) => x.status === 'scheduled');
+      return d && !d.clash && d.dropDay - s.day >= 2 ? 0.8 : 0;
+    },
+    params: (s) => ({ rivalId: pick(s, s.rivals.filter((r) => r.personality !== 'heritage')).id }),
+    title: (s, p) => `${rivalName(s, p.rivalId)} is dropping the same day`,
+    body: (s, p) => `${rivalName(s, p.rivalId)} just announced a drop on the same day as yours. Same crowd, same wallets.`,
+    options: (_s, p) => [
+      {
+        label: 'Move your drop three days',
+        hint: 'Loses a bit of hype',
+        apply: (s) => {
+          const d = s.drops.find((x) => x.status === 'scheduled');
+          if (!d) return 'Your drop already happened.';
+          d.dropDay += 3;
+          d.hype = clamp(d.hype * 0.9, 0, 100);
+          return 'Moved. You will have the spotlight to yourself.';
+        },
+      },
+      {
+        label: 'Hold the date',
+        hint: 'Demand split: about 20% fewer buyers',
+        apply: (s) => {
+          const d = s.drops.find((x) => x.status === 'scheduled');
+          if (d) d.clash = true;
+          const r = s.rivals.find((x) => x.id === p.rivalId);
+          if (r) r.relation = clamp(r.relation - 10, -100, 100);
+          return 'Head to head. May the better drop win.';
+        },
+      },
+      {
+        label: 'Undercut them',
+        hint: '15% lower drop price, more hype',
+        apply: (s) => {
+          const d = s.drops.find((x) => x.status === 'scheduled');
+          if (!d) return 'Your drop already happened.';
+          d.price = Math.max(1, Math.round(d.price * 0.85));
+          d.hype = clamp(d.hype + 10, 0, 100);
+          return `New drop price: ${money(d.price)}. The bargain hunters are coming.`;
+        },
+      },
+    ],
+  },
 ];
 
 export function eventDef(id: string): EventDef | undefined {
@@ -672,6 +933,14 @@ export function resolveEvent(state: GameState, optionIndex: number): { ok: true;
   const text = opt.apply(state, pe.params);
   state.pendingEvents.shift();
   return { ok: true, text };
+}
+
+/** Move due follow-up events into the queue. */
+export function processScheduledEvents(state: GameState, events: GameEvent[]): void {
+  const due = state.scheduledEvents.filter((e) => e.day <= state.day);
+  if (!due.length) return;
+  state.scheduledEvents = state.scheduledEvents.filter((e) => e.day > state.day);
+  for (const e of due) if (eventDef(e.defId)) queueEvent(state, e.defId, e.params, events);
 }
 
 /** First option that is not blocked (used by bots and as a safe default). */

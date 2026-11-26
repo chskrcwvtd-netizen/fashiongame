@@ -224,10 +224,10 @@ describe('events', () => {
         hire(s, s.candidates[0].id);
         s.employees[0].mood = 30;
         hireInfluencer(s, 'zsofi');
-        const params = def.params ? def.params(s) : { designId: d.id, lost: 20, factoryId: 'fastloop', unitCost: 10, quality: 40 };
+        const params = def.params ? def.params(s) : { designId: d.id, lost: 20, factoryId: 'fastloop', unitCost: 10, quality: 40, artistId: 'halogen', rivalId: 'krush' };
         queueEvent(s, def.id, params ?? {}, []);
         const r = resolveEvent(s, i);
-        if (!r.ok) expect(r.reason).toMatch(/cash/i);
+        if (!r.ok) expect(r.reason).toMatch(/cash|collab/i);
         else expect(r.text.length).toBeGreaterThan(3);
         expect(Number.isFinite(s.cash)).toBe(true);
       }
@@ -290,7 +290,7 @@ describe('save v2', () => {
     for (const k of ['trends', 'employees', 'candidates', 'posts', 'boosts', 'influencerCampaign', 'collab', 'pendingEvents', 'lastEventDay', 'lastTeamNight', 'supplierDiscountUntil']) delete v1[k];
     delete v1.designs[0].vibe;
     const m = deserialize(JSON.stringify(v1));
-    expect(m.version).toBe(2);
+    expect(m.version).toBe(3);
     expect(m.cash).toBe(s.cash);
     expect(m.designs[0].vibe).toBe('gorpcore');
     expect(m.candidates.length).toBe(4);

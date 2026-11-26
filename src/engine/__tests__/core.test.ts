@@ -46,7 +46,7 @@ describe('new game', () => {
     expect(s.day).toBe(1);
     expect(s.hqLevel).toBe(0);
     expect(s.gameOver).toBeNull();
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(3);
   });
   it('rejects bad brand name', () => {
     const logo = { glyph: 'star', color: 'lime' };

@@ -84,6 +84,8 @@ export function recordSale(state: GameState, designId: string, units: number, gr
   state.stats.revenue += net;
   state.stats.revenueThisWeek += net;
   state.stats.unitsSold += units;
+  state.stats.soldByDesign = state.stats.soldByDesign ?? {};
+  state.stats.soldByDesign[designId] = (state.stats.soldByDesign[designId] ?? 0) + units;
   if (!state.flags.firstSale) {
     state.flags.firstSale = true;
     events.push({ type: 'firstSale', designId });
@@ -114,4 +116,13 @@ export function simulateWebshopDay(state: GameState, events: GameEvent[]): void 
   }
   const top = Object.values(state.listings).sort((a, b) => b.soldTotal - a.soldTotal)[0];
   if (top && top.soldTotal > 0) state.stats.bestSellerId = top.designId;
+}
+
+/** Turn auto-reorder on (factory + batch size) or off (null). Needs a manager on the team to run. */
+export function setAutoRestock(state: GameState, designId: string, rule: { factoryId: import('./types').FactoryId; qty: number } | null): ActionResult {
+  const l = state.listings[designId];
+  if (!l) return { ok: false, reason: 'List the piece in the webshop first.' };
+  if (rule && !state.employees.some((e) => e.role === 'manager')) return { ok: false, reason: 'Hire a manager to run auto-reorders.' };
+  l.auto = rule ? { factoryId: rule.factoryId, qty: Math.max(1, Math.round(rule.qty)) } : null;
+  return { ok: true };
 }

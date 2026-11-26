@@ -28,7 +28,7 @@ export interface BotResult {
 }
 
 const base: Omit<DesignInput, 'garment' | 'name'> = {
-  primary: 'black', secondary: 'lime', pattern: 'grid', graphic: 'emblem', text: '', font: 'chrome', emblem: 'skull', material: 'standard', vibe: 'y2k',
+  primary: 'black', secondary: 'lime', pattern: 'grid', graphic: 'emblem', text: '', font: 'chrome', emblem: 'skull', material: 'standard', vibe: 'y2k', finish: 'print', back: 'none', backText: '',
 };
 
 function smartDay(s: GameState) {

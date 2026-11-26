@@ -16,3 +16,7 @@ export * from './trends';
 export * from './team';
 export * from './marketing';
 export * from './events';
+export * from './rivals';
+export * from './wholesale';
+export * from './milestones';
+export * from './comments';

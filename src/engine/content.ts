@@ -1,4 +1,7 @@
 import type {
+  BadgeId,
+  FinishId,
+  RivalPersonality,
   DifficultyId,
   FactoryId,
   FontId,
@@ -34,7 +37,10 @@ export const GARMENTS: Record<GarmentId, GarmentDef> = {
   puffer: { id: 'puffer', name: 'Puffer Jacket', refPrice: 160, baseCost: 30, demand: 0.55, seasonal: [0.6, 0.25, 1.2, 1.8], taste: 0.6 },
   cap: { id: 'cap', name: 'Cap', refPrice: 30, baseCost: 5, demand: 0.9, seasonal: [1.15, 1.3, 0.85, 0.6], taste: 0.55 },
   beanie: { id: 'beanie', name: 'Beanie', refPrice: 25, baseCost: 4, demand: 0.8, seasonal: [0.6, 0.3, 1.2, 1.7], taste: 0.5 },
+  track: { id: 'track', name: 'Track Jacket', refPrice: 90, baseCost: 17, demand: 0.7, seasonal: [1.2, 0.8, 1.1, 0.8], taste: 0.55 },
 };
+/** Pieces that must be unlocked by a milestone first. */
+export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track' };
 export const GARMENT_IDS = Object.keys(GARMENTS) as GarmentId[];
 
 export interface ColorDef {
@@ -136,7 +142,13 @@ export const FACTORIES: Record<FactoryId, FactoryDef> = {
     costMult: 1.5, qualityMod: 15, leadDays: 12, minOrder: 25,
     defectChance: 0.005, delayChance: 0.02, scandalChance: 0,
   },
+  vela: {
+    id: 'vela', name: 'Vela Craftworks', tagline: 'Premium and fast. Pricey.',
+    costMult: 1.75, qualityMod: 12, leadDays: 5, minOrder: 40,
+    defectChance: 0.01, delayChance: 0.03, scandalChance: 0,
+  },
 };
+export const LOCKED_FACTORIES: Partial<Record<FactoryId, string>> = { vela: 'unlock_vela' };
 export const FACTORY_IDS = Object.keys(FACTORIES) as FactoryId[];
 
 export interface HqLevelDef {
@@ -308,4 +320,69 @@ export const STAGE2 = {
   teamNightCooldown: 28,
   influencerDays: 7,
   marketSalaryVariance: 0.15,
+};
+
+// ---------------------------------------------------------------- stage 3
+
+
+export const FINISHES: Record<FinishId, { id: FinishId; name: string; blurb: string; costMult: number; quality: number; vibes: VibeId[] }> = {
+  print: { id: 'print', name: 'Printed', blurb: 'Clean screen print. Cheapest.', costMult: 1, quality: 0, vibes: [] },
+  embroidery: { id: 'embroidery', name: 'Embroidered', blurb: 'Stitched graphics. Feels expensive.', costMult: 1.25, quality: 6, vibes: ['luxury', 'retro'] },
+  washed: { id: 'washed', name: 'Washed', blurb: 'Faded, lived-in colour.', costMult: 1.1, quality: 0, vibes: ['grunge', 'skate', 'retro'] },
+  distressed: { id: 'distressed', name: 'Distressed', blurb: 'Rips and frayed edges.', costMult: 1.15, quality: -2, vibes: ['grunge', 'y2k', 'skate'] },
+};
+export const FINISH_IDS = Object.keys(FINISHES) as FinishId[];
+
+export const BADGES: Record<BadgeId, string> = { none: 'None', circle: 'Circle', diamond: 'Diamond', shield: 'Shield' };
+export const BADGE_IDS = Object.keys(BADGES) as BadgeId[];
+
+export interface RivalDef {
+  id: string;
+  name: string;
+  personality: RivalPersonality;
+  vibe: VibeId;
+  color: string;
+  glyph: string;
+  followers: number;
+  weeklyRevenue: number;
+  growth: number;
+  bio: string;
+}
+
+export const RIVALS: RivalDef[] = [
+  { id: 'krush', name: 'KRUSHLAB', personality: 'copycat', vibe: 'y2k', color: '#ff7a1a', glyph: 'bolt', followers: 900, weeklyRevenue: 1200, growth: 0.022, bio: 'Sees your hit, ships it cheaper two weeks later.' },
+  { id: 'velour', name: 'Velour Syndicate', personality: 'snob', vibe: 'luxury', color: '#e8e1cf', glyph: 'wings', followers: 90000, weeklyRevenue: 150000, growth: 0.011, bio: 'Old money pretending to be underground.' },
+  { id: 'hexpark', name: 'Hexpark', personality: 'chaos', vibe: 'cyber', color: '#19c7ff', glyph: 'alien', followers: 6000, weeklyRevenue: 7000, growth: 0.02, bio: 'Glitch-cult collective. Unpredictable drops.' },
+  { id: 'moss', name: 'Moss Theory', personality: 'eco', vibe: 'gorpcore', color: '#5d6534', glyph: 'flame', followers: 15000, weeklyRevenue: 18000, growth: 0.012, bio: 'Recycled fleece and moral high ground.' },
+  { id: 'pylon', name: 'Saint Pylon', personality: 'hype', vibe: 'techwear', color: '#ff2fb4', glyph: 'skull', followers: 40000, weeklyRevenue: 60000, growth: 0.019, bio: 'Every drop is an event. Every event is a drop.' },
+  { id: 'faithful', name: 'Old Faithful Athletic', personality: 'heritage', vibe: 'retro', color: '#b3121f', glyph: 'star', followers: 200000, weeklyRevenue: 300000, growth: 0.009, bio: 'Forty-year-old sportswear giant. Slow, rich, everywhere.' },
+];
+
+export interface StoreDef {
+  id: string;
+  name: string;
+  city: string;
+  minRep: number;
+  size: number;
+  risk: number;
+}
+
+export const STORES: StoreDef[] = [
+  { id: 'concrete', name: 'Concrete Garden', city: 'Budapest', minRep: 15, size: 1, risk: 0.02 },
+  { id: 'kollektiv', name: 'Kollektiv Nord', city: 'Berlin', minRep: 25, size: 1.6, risk: 0.04 },
+  { id: 'lateshift', name: 'Late Shift', city: 'Warsaw', minRep: 20, size: 1.2, risk: 0.06 },
+  { id: 'threads', name: 'Basement Threads', city: 'Prague', minRep: 30, size: 1.4, risk: 0.03 },
+  { id: 'atomic', name: 'Atomic Lobby', city: 'Milan', minRep: 45, size: 2.4, risk: 0.05 },
+  { id: 'tidal', name: 'Tidal Room', city: 'Copenhagen', minRep: 55, size: 3, risk: 0.02 },
+];
+
+export const STAGE3 = {
+  campaignYears: 5,
+  wholesaleOfferChance: 0.55,
+  wholesalePriceShare: 0.52,
+  offerDays: 10,
+  restockDemandMult: 0.8,
+  collectionBonus: 0.08,
+  collectionMin: 3,
+  xpPerLevelBase: 6,
 };

@@ -18,6 +18,9 @@ export const HOODIE: DesignInput = {
   emblem: 'skull',
   material: 'standard',
   vibe: 'y2k',
+  finish: 'print',
+  back: 'none',
+  backText: '',
 };
 
 export function withDesign(state: GameState, input: Partial<DesignInput> = {}) {

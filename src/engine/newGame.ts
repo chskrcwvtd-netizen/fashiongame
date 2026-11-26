@@ -2,6 +2,7 @@ import { DIFFICULTIES, ECON } from './content';
 import { seedFromString } from './rng';
 import { initTrends } from './trends';
 import { refreshCandidates } from './team';
+import { initRivals } from './rivals';
 import type { DifficultyId, GameState, LogoChoice } from './types';
 
 export interface NewGameOptions {
@@ -26,7 +27,7 @@ export function createNewGame(opts: NewGameOptions): GameState {
   const name = opts.brandName.trim();
   const seed = (opts.seed ?? seedFromString(name + ':' + Date.now())) >>> 0;
   const state: GameState = {
-    version: 2,
+    version: 3,
     seed,
     rngState: seedFromString(`rng:${seed}`),
     day: 1,
@@ -59,10 +60,24 @@ export function createNewGame(opts: NewGameOptions): GameState {
     flags: {},
     nextId: 1,
     ...stage2Defaults(),
+    ...stage3Defaults(),
   };
   state.trends = initTrends(state);
   refreshCandidates(state);
   return state;
+}
+
+/** Fresh stage 3 fields. */
+export function stage3Defaults(): Pick<GameState, 'rivals' | 'wholesale' | 'milestones' | 'unlocks' | 'scheduledEvents' | 'campaign' | 'history'> {
+  return {
+    rivals: initRivals(),
+    wholesale: { offers: [], receivables: [] },
+    milestones: {},
+    unlocks: [],
+    scheduledEvents: [],
+    campaign: { wonDay: null, endSeen: false, winSeen: false },
+    history: { followers: [], value: [], rank: [] },
+  };
 }
 
 /** Fresh stage 2 fields (trends/candidates are filled in by the caller). */

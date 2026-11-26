@@ -1,4 +1,4 @@
-import { DIFFICULTIES, ECON, GARMENTS } from './content';
+import { DIFFICULTIES, ECON, GARMENTS, STAGE3 } from './content';
 import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './design';
 import { newId } from './newGame';
 import { randRange } from './rng';
@@ -50,6 +50,7 @@ export function scheduleDrop(state: GameState, input: DropInput): ActionResult {
     status: 'scheduled',
     postponements: 0,
     result: null,
+    restock: state.drops.some((d) => d.designId === input.designId && d.status === 'done' && d.result?.outcome === 'soldout'),
   });
   state.hype = clamp(state.hype + 3, 0, 100);
   // keep history short
@@ -77,7 +78,7 @@ export function postTeaser(state: GameState): ActionResult {
 }
 
 /** Demand for a drop right now (expected value, no randomness). */
-export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'price' | 'hype'>): number {
+export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'price' | 'hype'> & Partial<Pick<Drop, 'restock' | 'clash'>>): number {
   const design = getDesign(state, drop.designId);
   if (!design) return 0;
   const lot = state.inventory[drop.designId];
@@ -92,7 +93,9 @@ export function dropDemand(state: GameState, drop: Pick<Drop, 'designId' | 'pric
     pf *
     Math.sqrt(GARMENTS[design.garment].demand) *
     Math.pow(seasonFactor(state, design), 0.7) *
-    DIFFICULTIES[state.difficulty].demandMult
+    DIFFICULTIES[state.difficulty].demandMult *
+    (drop.restock ? STAGE3.restockDemandMult : 1) *
+    (drop.clash ? 0.8 : 1)
   );
 }
 
