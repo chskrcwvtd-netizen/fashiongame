@@ -428,7 +428,7 @@ export class GameStore {
           if (!s.campaign.endSeen) this.campaignSplash = { kind: 'ended', rank: e.rank };
           break;
         case 'dropResult': {
-          const name = this.designName(e.designId);
+          const name = e.name ?? this.designName(e.designId);
           this.splash = { designName: name, result: e.result };
           this.floatMoney(e.result.revenue);
           const label = e.result.outcome === 'soldout' ? 'SOLD OUT' : e.result.outcome === 'solid' ? 'Solid drop' : 'Flop';

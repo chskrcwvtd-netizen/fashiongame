@@ -1,7 +1,7 @@
 import type { Panel } from '../../store/gameStore';
 import { useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
-import { activeDrop, playerRank } from '../../engine';
+import { activeDrop, playerRank, rivalCollabOffer } from '../../engine';
 import { coachStep } from './Moments';
 import { HOTKEYS } from './Help';
 
@@ -30,6 +30,7 @@ export function NavRail() {
   const drop = activeDrop(s);
   const shipping = s.orders.length;
   const rank = playerRank(s);
+  const offer = rivalCollabOffer(s);
   const coachPanel = store.tutorial ? (['lab', 'production', 'shop', 'drops', 'hq'] as Panel[])[coachStep(s)] : null;
   return (
     <nav className="rail" aria-label="Screens">
@@ -57,7 +58,9 @@ export function NavRail() {
           {it.id === 'production' && shipping > 0 && <i className="rail-badge">{shipping}</i>}
           {it.id === 'team' && s.employees.some((e) => e.mood < 35) && <i className="rail-badge warn">!</i>}
           {it.id === 'wholesale' && s.wholesale.offers.length > 0 && <i className="rail-badge">{s.wholesale.offers.length}</i>}
-          {it.id === 'rivals' && <i className="rail-badge rank">#{rank}</i>}
+          {it.id === 'rivals' && (offer
+            ? <i className="rail-badge warn" aria-label="New brand collab offer" title="New brand collab offer">!</i>
+            : <i className="rail-badge rank">#{rank}</i>)}
           {store.tutorial && coachPanel === it.id && <i className="coach-ring" aria-hidden="true" />}
         </button>
       ))}

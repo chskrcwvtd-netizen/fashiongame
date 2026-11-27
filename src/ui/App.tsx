@@ -25,6 +25,7 @@ import { TrendsPanel } from './game/TrendsPanel';
 import { MarketingPanel } from './game/MarketingPanel';
 import { TeamPanel } from './game/TeamPanel';
 import { EventModal } from './game/EventModal';
+import { IsometricStudio } from './components/IsometricStudio';
 
 function GameScreen() {
   const store = useStore();
@@ -81,23 +82,41 @@ function GameScreen() {
     <div className={`game ${store.speed === 0 ? 'is-paused' : ''}`} data-testid="game">
       <TopBar onMenu={openMenu} />
       <NavRail />
-      <main className="stage" key={store.panel}>
-        {store.panel === 'hq' && <HQPanel />}
-        {store.panel === 'lab' && <DesignLab />}
-        {store.panel === 'production' && <ProductionPanel />}
-        {store.panel === 'shop' && <ShopPanel />}
-        {store.panel === 'drops' && <DropsPanel />}
-        {store.panel === 'trends' && <TrendsPanel />}
-        {store.panel === 'marketing' && <MarketingPanel />}
-        {store.panel === 'team' && <TeamPanel />}
-        {store.panel === 'rivals' && <RivalsPanel />}
-        {store.panel === 'wholesale' && <WholesalePanel />}
-        {store.panel === 'stats' && <StatsPanel />}
-        {store.panel === 'world' && <WorldPanel />}
-        {store.panel === 'empire' && <EmpirePanel />}
-        {store.panel === 'lookbook' && <Lookbook />}
-        <HelpButton panel={store.panel} />
-      </main>
+      <div className="studio-frame">
+        {store.panel === 'hq' ? (
+          <main className="stage studio-floor">
+            <HQPanel />
+            <HelpButton panel="hq" />
+          </main>
+        ) : (
+          <>
+            <div className="studio-backdrop"><IsometricStudio interactive={false} /></div>
+            <section className="studio-window" role="dialog" aria-label="Studio controls">
+              <div className="studio-window-bar">
+                <button className="studio-back" onClick={() => store.setPanel('hq')} data-testid="studio-back">
+                  <span aria-hidden="true">‹</span> Back to studio
+                </button>
+              </div>
+              <main className="stage studio-controls" key={store.panel}>
+                {store.panel === 'lab' && <DesignLab />}
+                {store.panel === 'production' && <ProductionPanel />}
+                {store.panel === 'shop' && <ShopPanel />}
+                {store.panel === 'drops' && <DropsPanel />}
+                {store.panel === 'trends' && <TrendsPanel />}
+                {store.panel === 'marketing' && <MarketingPanel />}
+                {store.panel === 'team' && <TeamPanel />}
+                {store.panel === 'rivals' && <RivalsPanel />}
+                {store.panel === 'wholesale' && <WholesalePanel />}
+                {store.panel === 'stats' && <StatsPanel />}
+                {store.panel === 'world' && <WorldPanel />}
+                {store.panel === 'empire' && <EmpirePanel />}
+                {store.panel === 'lookbook' && <Lookbook />}
+                <HelpButton panel={store.panel} />
+              </main>
+            </section>
+          </>
+        )}
+      </div>
       <Feed />
       <Toasts />
       {store.undo && Date.now() < store.undo.until && (

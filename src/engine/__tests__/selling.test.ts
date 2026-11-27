@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { expectedDailySales, setListing, simulateWebshopDay } from '../webshop';
-import { activeDrop, postTeaser, scheduleDrop } from '../drops';
+import { availableUnits, expectedDailySales, setListing, simulateWebshopDay } from '../webshop';
+import { activeDrop, processDrops, postTeaser, scheduleDrop } from '../drops';
 import { placeOrder } from '../production';
 import { advanceDay } from '../tick';
+import { deserialize, serialize } from '../save';
 import { fairPrice } from '../design';
 import type { GameEvent, GameState } from '../types';
 import { giveStock, newGame, withDesign } from './helpers';
@@ -155,4 +156,39 @@ describe('drops', () => {
     advanceDay(s);
     expect(postTeaser(s).ok).toBe(true);
   });
+});
+
+it('holds all collection stock until every piece arrives, then settles one launch', () => {
+  const s = newGame();
+  const tee = withDesign(s, { name: 'Tee', garment: 'tee' });
+  const hoodie = withDesign(s);
+  giveStock(s, tee.id, 20);
+  const input = {
+    name: 'After Dark',
+    items: [
+      { designId: tee.id, units: 4, price: 1 },
+      { designId: hoodie.id, units: 5, price: 2 },
+    ],
+    daysAhead: 3,
+  };
+  expect(scheduleDrop(s, input).ok).toBe(false);
+  expect(activeDrop(s)).toBeNull();
+  expect(scheduleDrop(s, { ...input, preorder: true }).ok).toBe(true);
+  expect(availableUnits(s, tee.id)).toBe(16);
+  expect(availableUnits(s, hoodie.id)).toBe(0);
+  const restored = deserialize(serialize(s));
+  restored.day = activeDrop(restored)!.dropDay;
+  const events: GameEvent[] = [];
+  processDrops(restored, events);
+  expect(events[0]).toMatchObject({ type: 'dropPostponed', designId: hoodie.id });
+  expect(restored.inventory[tee.id].units).toBe(20);
+  giveStock(restored, hoodie.id, 25);
+  expect(availableUnits(restored, hoodie.id)).toBe(20);
+  restored.day = activeDrop(restored)!.dropDay;
+  processDrops(restored, events);
+  expect(events.at(-1)).toMatchObject({ type: 'dropResult', name: input.name, result: { sold: 9, units: 9 } });
+  expect(restored.stats.dropsTotal).toBe(1);
+  expect(restored.inventory[tee.id].units).toBe(16);
+  expect(restored.inventory[hoodie.id].units).toBe(20);
+  expect(availableUnits(restored, tee.id)).toBe(16);
 });

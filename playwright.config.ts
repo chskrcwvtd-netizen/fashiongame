@@ -9,7 +9,8 @@ export default defineConfig({
   projects: [
     { name: 'browser', testMatch: /playthrough|sound/, use: { baseURL: 'http://localhost:4173' } },
     { name: 'desktop', testMatch: /electron/ },
-    { name: 'iphone', testMatch: /iphone/, use: { ...devices['iPhone 15'], browserName: 'chromium', baseURL: 'http://localhost:4173' } },
+    { name: 'iphone', testMatch: /iphone/, use: { ...devices['iPhone 15'], browserName: 'chromium', baseURL: 'http://localhost:4173', actionTimeout: 8_000 } },
+    { name: 'iphone-webkit', testMatch: /iphone/, use: { ...devices['iPhone 15'], browserName: 'webkit', baseURL: 'http://localhost:4173', actionTimeout: 8_000 } },
   ],
   webServer: { command: 'npx vite preview --port 4173 --strictPort', port: 4173, reuseExistingServer: true },
 });

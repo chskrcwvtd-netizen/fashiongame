@@ -48,7 +48,7 @@ export const GARMENTS: Record<GarmentId, GarmentDef> = {
   shorts: { id: 'shorts', name: 'Shorts', refPrice: 45, baseCost: 8, demand: 0.9, seasonal: [1.1, 1.6, 0.6, 0.3], taste: 0.55 },
 };
 /** Pieces that must be unlocked first (milestone or product-line investment). */
-export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track', sneakers: 'line_sneakers', bag: 'line_bag', jewelry: 'line_jewelry', perfume: 'line_perfume' };
+export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track', sneakers: 'line_sneakers', perfume: 'line_perfume' };
 export const GARMENT_IDS = Object.keys(GARMENTS) as GarmentId[];
 
 export interface ColorDef {
@@ -437,8 +437,6 @@ export const BUDAPEST = { x: 528, y: 150 };
 
 export const PRODUCT_LINES: { id: string; garment: GarmentId; name: string; cost: number; blurb: string }[] = [
   { id: 'line_sneakers', garment: 'sneakers', name: 'Sneakers', cost: 40000, blurb: 'The holy grail of hype. Pricey to make, everyone wants them.' },
-  { id: 'line_bag', garment: 'bag', name: 'Bags', cost: 60000, blurb: 'Crossbody bags. Steady sellers all year.' },
-  { id: 'line_jewelry', garment: 'jewelry', name: 'Jewelry', cost: 90000, blurb: 'Chains and pendants. Small, cheap to ship, big markup.' },
   { id: 'line_perfume', garment: 'perfume', name: 'Perfume', cost: 150000, blurb: 'Cheap to make, huge margins, gift season gold.' },
 ];
 

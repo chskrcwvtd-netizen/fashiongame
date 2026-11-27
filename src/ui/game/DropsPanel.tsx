@@ -11,14 +11,16 @@ import {
   scheduleDrop,
   teaserCost,
   unitsReadyBy,
+  type Design,
+  type DropItem,
 } from '../../engine';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { NumberField } from '../components/NumberField';
 import { money, useGame } from '../hooks';
 
-function Outlook({ demand, units }: { demand: number; units: number }) {
+function Outlook({ demand, units, collection }: { demand: number; units: number; collection?: boolean }) {
   const r = demand / Math.max(1, units);
-  const [label, tone] = r > 1.6 ? ['Sell-out written all over it', 'good'] : r > 1.05 ? ['Could sell out', 'good'] : r > 0.6 ? ['Risky, might not clear', 'warn'] : ['Likely flop at this price', 'bad'];
+  const [label, tone] = r > 1.6 ? ['Sell-out written all over it', 'good'] : (collection ? r >= 1 : r > 1.05) ? ['Could sell out', 'good'] : r > 0.6 ? ['Risky, might not clear', 'warn'] : ['Likely flop at this price', 'bad'];
   return <span className={`outlook tone-${tone}`} data-testid="drop-outlook">{label}</span>;
 }
 
@@ -26,8 +28,13 @@ function ActiveDrop() {
   const { store, s } = useGame();
   const drop = activeDrop(s)!;
   const d = getDesign(s, drop.designId)!;
+  const partner = s.rivals.find((rival) => rival.id === s.rivalCollab);
+  const name = drop.name ?? d.name;
   const left = Math.max(0, drop.dropDay - s.day);
-  const projected = dropDemand(s, drop);
+  const items = drop.items;
+  const projected = items
+    ? items.reduce((sum, item) => sum + Math.min(item.units, dropDemand(s, { ...drop, ...item }) / Math.sqrt(items.length)), 0)
+    : dropDemand(s, drop);
   const cost = teaserCost(s);
   const teasedToday = s.lastTeaserDay === s.day;
   return (
@@ -39,11 +46,17 @@ function ActiveDrop() {
         <p className="countdown" data-testid="drop-countdown">
           {left === 0 ? 'Dropping today' : `${left} ${left === 1 ? 'day' : 'days'} to go`}
         </p>
-        <h3>{d.name}</h3>
+        <h3>{name}</h3>
+        {partner && <p className="drop-partner">In collaboration with {partner.name}</p>}
         <p className="muted">
-          {drop.units} units at {money(drop.price)}
+          {drop.units} units {drop.items ? `across ${drop.items.length} pieces` : `at ${money(drop.price)}`}
           {drop.postponements ? `, postponed ${drop.postponements}×` : ''}
         </p>
+        {drop.items && <ul className="collection-summary">
+          {drop.items.map((item) => (
+            <li key={item.designId}>{getDesign(s, item.designId)?.name} · {item.units} × {money(item.price)}</li>
+          ))}
+        </ul>}
         <div className="hype-big">
           <span className="hype-label">Drop hype</span>
           <span className="hype-track">
@@ -51,12 +64,12 @@ function ActiveDrop() {
           </span>
           <strong>{Math.round(drop.hype)}</strong>
         </div>
-        <Outlook demand={projected} units={drop.units} />
+        <Outlook demand={projected} units={drop.units} collection={!!items} />
         <p className="muted small">Hype builds by itself for about a week, then starts to cool. Teasers push it up faster.</p>
         <button
           className="btn btn-primary"
           disabled={teasedToday || s.cash < cost}
-          onClick={() => store.act(postTeaser, { sound: 'dropAnnounce', feed: `Teaser posted for ${d.name}.` })}
+          onClick={() => store.act(postTeaser, { sound: 'dropAnnounce', feed: `Teaser posted for ${name}.` })}
           data-testid="post-teaser"
         >
           {teasedToday ? 'Teased today, back tomorrow' : `Post a teaser for ${money(cost)}`}
@@ -68,13 +81,26 @@ function ActiveDrop() {
 
 function PlanDrop() {
   const { store, s } = useGame();
-  const candidates = s.designs.filter((d) => unitsReadyBy(s, d.id, s.day + ECON.dropMaxDays) > 0);
-  const preferred = store.selectedDesignId && candidates.some((c) => c.id === store.selectedDesignId) ? store.selectedDesignId : candidates[candidates.length - 1]?.id;
+  const [opts, setOpts] = useState({ numbered: false, preorder: false, raffle: false, botShield: false });
+  const candidates = s.designs;
+  const stocked = candidates.filter((piece) => unitsReadyBy(s, piece.id, s.day + ECON.dropMaxDays) > 0);
+  const groups = new Map<string, Design[]>();
+  for (const piece of candidates) {
+    if (!piece.collection) continue;
+    const group = groups.get(piece.collection) ?? [];
+    group.push(piece);
+    groups.set(piece.collection, group);
+  }
+  const collections = [...groups].filter(([, pieces]) => pieces.length > 1).map(([name]) => name);
+  const [name, setName] = useState('');
+  const [extras, setExtras] = useState<DropItem[]>([]);
+  const [adding, setAdding] = useState('');
+  const [savedCollection, setSavedCollection] = useState('');
+  const preferred = store.selectedDesignId && candidates.some((c) => c.id === store.selectedDesignId) ? store.selectedDesignId : (stocked.at(-1) ?? candidates.at(-1))?.id;
   const [designId, setDesignId] = useState<string | undefined>(preferred);
   const [days, setDays] = useState(7);
-  const design = designId ? getDesign(s, designId) : undefined;
+  const design = candidates.find((piece) => piece.id === designId) ?? candidates.find((piece) => piece.id === preferred);
   const ready = design ? unitsReadyBy(s, design.id, s.day + days) : 0;
-  const [opts, setOpts] = useState({ numbered: false, preorder: false, raffle: false, botShield: false });
   const maxUnits = Math.max(1, Math.min(opts.numbered ? 100 : Infinity, opts.preorder ? ready + freeCapacity(s) : ready));
   const quality = design ? s.inventory[design.id]?.quality ?? 50 : 50;
   const fair = design ? fairPrice(s, design, quality) : 50;
@@ -89,16 +115,46 @@ function PlanDrop() {
   if (!design) {
     return (
       <div className="empty card">
-        <p>You need stock for a drop. Order a batch first; stock that lands before drop day counts.</p>
-        <button className="btn btn-primary" onClick={() => store.setPanel('production')}>
-          Go to factories
+        <p>Save a design first. A collection drop releases two or more designs together.</p>
+        <button className="btn btn-primary" onClick={() => store.setPanel('lab')}>
+          Open Design Lab
         </button>
       </div>
     );
   }
   // Rough projection: assume hype grows to what a week of buzz gives.
   const expectHype = Math.min(85, s.hype * 0.6 + 5 + Math.min(days, 8) * 4);
-  const projected = dropDemand(s, { designId: design.id, price, hype: expectHype, numbered: opts.numbered, raffle: opts.raffle });
+  const primary = { designId: design.id, units, price };
+  const items = [primary, ...extras];
+  const total = items.reduce((sum, item) => sum + item.units, 0);
+  const projected = items.reduce((sum, item) => {
+    const demand = dropDemand(s, { ...item, hype: expectHype, ...opts }) / Math.sqrt(items.length);
+    return sum + (extras.length ? Math.min(item.units, demand) : demand);
+  }, 0);
+  const remaining = candidates.filter((piece) => items.every((item) => item.designId !== piece.id));
+  const nextPiece = remaining.find((piece) => piece.id === adding) ?? remaining[0];
+
+  function defaultItem(piece: Design): DropItem {
+    return {
+      designId: piece.id,
+      units: Math.max(1, Math.min(25, unitsReadyBy(s, piece.id, s.day + days))),
+      price: Math.round(fairPrice(s, piece, s.inventory[piece.id]?.quality ?? 50) * 1.2),
+    };
+  }
+
+  function loadCollection(group: string) {
+    const [lead, ...pieces] = (groups.get(group) ?? []).map(defaultItem);
+    if (!lead || !pieces.length) return;
+    setName(group);
+    setDesignId(lead.designId);
+    setUnits(lead.units);
+    setPrice(lead.price);
+    setExtras(pieces);
+  }
+
+  function editPiece(id: string, change: Partial<DropItem>) {
+    setExtras(extras.map((item) => item.designId === id ? { ...item, ...change } : item));
+  }
 
   return (
     <div className="drop-plan card" data-testid="drop-plan">
@@ -106,10 +162,23 @@ function PlanDrop() {
         <GarmentPreview design={design} logo={s.brand.logo} size={220} />
       </div>
       <div className="drop-plan-form">
+        {collections.length > 0 && (
+          <div className="field">
+            <label htmlFor="saved-collection">From Design Lab</label>
+            <div className="row collection-add">
+              <select id="saved-collection" className="input" value={savedCollection || collections[0]} onChange={(e) => setSavedCollection(e.target.value)}>
+                {collections.map((group) => <option value={group} key={group}>{group}</option>)}
+              </select>
+              <button className="btn" onClick={() => loadCollection(savedCollection || collections[0])} data-testid="load-drop-collection">
+                Load collection
+              </button>
+            </div>
+          </div>
+        )}
         <div className="field">
-          <label>Piece</label>
-          <select className="input" value={design.id} onChange={(e) => setDesignId(e.target.value)} data-testid="drop-design">
-            {candidates.map((d) => (
+          <label>Lead piece</label>
+          <select className="input" value={design.id} onChange={(e) => setDesignId(e.target.value)} aria-label="Lead piece" data-testid="drop-design">
+            {candidates.filter((piece) => extras.every((item) => item.designId !== piece.id)).map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
               </option>
@@ -134,13 +203,52 @@ function PlanDrop() {
           <input type="range" min={ECON.dropMinDays} max={ECON.dropMaxDays} value={days} onChange={(e) => setDays(Number(e.target.value))} data-testid="drop-days" />
           <span className="muted small">About a week is the sweet spot. Longer and people lose interest.</span>
         </div>
+        <fieldset className="drop-collection">
+          <legend>Collection drop</legend>
+          {extras.length === 0 && <p className="muted small">Add another design to release all pieces on the same date.</p>}
+          {!nextPiece && extras.length === 0 && (
+            <button className="link" onClick={() => store.setPanel('lab')}>Design another piece</button>
+          )}
+          {extras.length > 0 && (
+            <label className="field">
+              Collection name
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} data-testid="collection-name" />
+            </label>
+          )}
+          {extras.map((item) => {
+            const piece = getDesign(s, item.designId)!;
+            const ready = unitsReadyBy(s, item.designId, s.day + days);
+            return (
+              <div className="collection-piece" key={item.designId}>
+                <GarmentPreview design={piece} logo={s.brand.logo} size={72} />
+                <div>
+                  <strong>{piece.name}</strong>
+                  <p className="muted small">{ready} ready by drop day</p>
+                </div>
+                <label className="field">Units
+                  <NumberField value={item.units} min={1} max={Math.max(1, opts.preorder ? ready + freeCapacity(s) : ready)} onCommit={(units) => editPiece(item.designId, { units })} label={`Units for ${piece.name}`} />
+                </label>
+                <label className="field">Price
+                  <NumberField value={item.price} min={1} max={ECON.maxListingPrice} onCommit={(price) => editPiece(item.designId, { price })} label={`Price for ${piece.name}`} />
+                </label>
+                <button className="btn btn-ghost" aria-label={`Remove ${piece.name}`} onClick={() => setExtras(extras.filter((other) => other.designId !== item.designId))}>Remove</button>
+              </div>
+            );
+          })}
+          {nextPiece && <div className="row collection-add">
+            <select className="input" value={nextPiece.id} onChange={(e) => setAdding(e.target.value)} aria-label="Piece to add">
+              {remaining.map((piece) => <option value={piece.id} key={piece.id}>{piece.name}</option>)}
+            </select>
+            <button className="btn" onClick={() => setExtras([...extras, defaultItem(nextPiece)])} data-testid="add-drop-piece">Add piece</button>
+          </div>}
+        </fieldset>
         <div className="drop-opts">
           {(
             [
               ['numbered', 'Numbered 1/100', 'Max 100 pieces, collectors pay about 35% more'],
               ['preorder', 'Pre-orders', 'Take 20% up front and make the rest before drop day'],
               ['raffle', 'Raffle', 'Fairer for fans: more buzz, no bots'],
-              ['botShield', `Bot protection (${money(botShieldCost(s, units))})`, 'Stops bots grabbing a hot drop'],
+              ['botShield', `Bot protection (${money(botShieldCost(s, total))})`, 'Stops bots grabbing a hot drop'],
             ] as const
           ).map(([k, label, hint]) => (
             <label key={k} className="check" title={hint}>
@@ -150,21 +258,24 @@ function PlanDrop() {
             </label>
           ))}
         </div>
+        {!opts.preorder && items.some((item) => unitsReadyBy(s, item.designId, s.day + days) < item.units) && (
+          <p className="muted small">Some pieces are short on stock. Order a batch, pick a later date, lower the quantity, or turn on pre-orders.</p>
+        )}
         <div className="row spread">
-          <Outlook demand={projected} units={units} />
+          <Outlook demand={projected} units={total} collection={extras.length > 0} />
           <button
             className="btn btn-primary btn-big"
             data-testid="announce-drop"
             onClick={() => {
-              const r = store.act((st) => scheduleDrop(st, { designId: design.id, units, price, daysAhead: days, ...opts }), {
+              const release = extras.length ? { name, items } : primary;
+              store.act((st) => scheduleDrop(st, { ...release, daysAhead: days, ...opts }), {
                 sound: 'dropAnnounce',
-                feed: `Drop announced: ${units}× ${design.name} at ${money(price)} in ${days} days.`,
+                feed: `Drop announced: ${name.trim() && extras.length ? name.trim() : design.name}, ${total} units in ${days} days.`,
                 toast: 'Drop announced. Build the hype.',
               });
-              void r;
             }}
           >
-            Announce drop
+            {extras.length ? `Announce collection · ${total} units` : 'Announce drop'}
           </button>
         </div>
       </div>
@@ -175,10 +286,12 @@ function PlanDrop() {
 export function DropsPanel() {
   const { s } = useGame();
   const drop = activeDrop(s);
+  const partner = s.rivals.find((rival) => rival.id === s.rivalCollab);
   const past = s.drops.filter((d) => d.status === 'done').slice(-8).reverse();
   return (
     <div className="panel drops" data-testid="panel-drops">
       <h2 className="display">drops</h2>
+      {!drop && partner && <p className="drop-partner">Your next drop is in collaboration with {partner.name}.</p>}
       {drop ? <ActiveDrop /> : <PlanDrop />}
       {past.length > 0 && (
         <section className="card">
@@ -186,7 +299,7 @@ export function DropsPanel() {
           <ul className="past-drops">
             {past.map((p) => (
               <li key={p.id} className={`tone-${p.result?.outcome === 'flop' ? 'bad' : 'good'}`}>
-                <strong>{getDesign(s, p.designId)?.name}</strong>
+                <strong>{p.name ?? getDesign(s, p.designId)?.name}{p.result?.partner && <small className="drop-partner"> × {p.result.partner}</small>}</strong>
                 <span>{p.result?.outcome === 'soldout' ? `Sold out in ${p.result.minutes} min` : p.result?.outcome === 'solid' ? 'Solid' : 'Flop'}</span>
                 <span>
                   {p.result?.sold}/{p.units} sold

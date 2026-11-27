@@ -108,6 +108,9 @@ export function MarketingPanel() {
   return (
     <div className="panel marketing" data-testid="panel-marketing">
       <h2 className="display">marketing</h2>
+      <button className="link runway-jump" onClick={() => document.getElementById('runway')?.scrollIntoView({ block: 'start' })} data-testid="open-runway">
+        Runway and fashion weeks ↓
+      </button>
       <div className="mk-grid">
         <PostCard />
         <section className="card">

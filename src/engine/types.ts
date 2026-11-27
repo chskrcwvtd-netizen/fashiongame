@@ -88,7 +88,15 @@ export interface ProductionOrder {
 
 export type DropOutcome = 'soldout' | 'solid' | 'flop';
 
+export interface DropItem {
+  designId: string;
+  units: number;
+  price: number;
+}
+
 export interface DropResult {
+  partner?: string;
+  items?: (DropItem & { sold: number })[];
   outcome: DropOutcome;
   units: number;
   sold: number;
@@ -102,6 +110,8 @@ export interface DropResult {
 }
 
 export interface Drop {
+  name?: string;
+  items?: DropItem[];
   id: string;
   designId: string;
   units: number;
@@ -239,12 +249,14 @@ export interface GameState {
   // ---- stage 4 ----
   cities: Partial<Record<CityId, 1 | 2>>;
   corporate: Corporate;
-  shows: { applied: ShowBooking[]; lastRunwayDay: number; history: { name: string; day: number; outcome: 'ovation' | 'good' | 'panned' }[] };
+  shows: { applied: ShowBooking[]; lastRunwayDay: number; history: ShowHistoryEntry[] };
   // ---- 50-question update (optional so older saves load untouched) ----
   loans?: Loan[];
   press?: { day: number; mag: string; headline: string }[];
   challenge?: { id: string; done: 'won' | 'lost' | null } | null;
   rivalCollab?: string | null;
+  rivalOffer?: { rivalId: string; expiresDay: number };
+  lastRivalOfferDay?: number;
   sustainability?: boolean;
 }
 
@@ -263,6 +275,17 @@ export interface ShowBooking {
   weekId: string;
   budget: ShowBudget;
   day: number;
+  lookIds?: string[];
+}
+
+export interface ShowHistoryEntry {
+  name: string;
+  day: number;
+  outcome: 'ovation' | 'good' | 'panned';
+  id?: string;
+  text?: string;
+  looks?: Design[];
+  logo?: LogoChoice;
 }
 
 export interface Corporate {
@@ -325,7 +348,7 @@ export type GameEvent =
   | { type: 'defect'; orderId: string; designId: string; lost: number }
   | { type: 'delay'; orderId: string; designId: string; days: number }
   | { type: 'scandal'; factoryId: FactoryId; repLoss: number }
-  | { type: 'dropResult'; dropId: string; designId: string; result: DropResult }
+  | { type: 'dropResult'; dropId: string; designId: string; name?: string; result: DropResult }
   | { type: 'dropPostponed'; dropId: string; designId: string; newDay: number }
   | { type: 'bills'; total: number; rent: number; platform: number; storage: number; salaries: number; markets?: number }
   | { type: 'overdrawn'; graceDays: number }

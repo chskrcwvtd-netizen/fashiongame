@@ -11,6 +11,7 @@ import '@fontsource/unifrakturmaguntia/400.css';
 import '@fontsource/rubik-bubbles/400.css';
 import '@fontsource/permanent-marker/400.css';
 import './styles/app.css';
+import './styles/editorial.css';
 import { App } from './ui/App';
 import { StoreContext } from './ui/hooks';
 import { GameStore } from './store/gameStore';

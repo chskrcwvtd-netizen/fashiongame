@@ -300,12 +300,17 @@ test('stage 4: world, product lines, investors, stock market, takeover, runway',
     s.hqLevel = 2;
     s.reputation = 60;
     s.followers = 400_000;
+    s.campaign.winSeen = true; // This setup can win the chart while the runway result is open.
     s.stats.weeklyRevenue = [900_000, 900_000];
     st.endTutorial();
     st.bump();
   });
   for (let i = 0; i < 3; i++) {
     await page.getByTestId('nav-lab').click();
+    if (i === 2) {
+      await page.getByTestId('garment-puffer').click();
+      await page.getByTestId('pattern-grid').click();
+    }
     await page.getByTestId('design-name').fill(`PIECE ${i}`);
     await page.getByTestId('save-design').click();
   }
@@ -331,11 +336,21 @@ test('stage 4: world, product lines, investors, stock market, takeover, runway',
   await expect(page.locator('#lab-turntable svg').first()).toBeVisible();
 
   await page.getByTestId('nav-marketing').click();
+  await page.getByTestId('open-runway').click();
+  await page.getByTestId('runway-look-1').selectOption({ label: 'PIECE 2' });
   await page.getByTestId('book-runway').click();
+  await expect(page.getByTestId('runway-bookings')).toContainText('PIECE 2');
   await page.getByTestId('speed-4').click();
   await expect(page.getByTestId('event-outcome')).toBeVisible({ timeout: 20_000 });
-  if (await page.getByTestId('campaign-splash').isVisible()) await page.getByTestId('campaign-continue').click();
   await page.getByTestId('event-ok').click();
+  await page.getByTestId('speed-0').click();
+  await page.getByTestId('watch-runway').click();
+  await expect(page.getByTestId('runway-replay').getByRole('img', { name: 'PIECE 2', exact: true })).toBeVisible();
+  await page.getByTestId('runway-replay').getByRole('button', { name: 'Pause', exact: true }).click();
+  await page.screenshot({ path: 'test-results/runway.png', animations: 'disabled' });
+  await page.getByTestId('runway-result').click();
+  await expect(page.getByTestId('runway-verdict')).toBeVisible();
+  await page.getByTestId('close-runway').click();
   await page.getByTestId('nav-hq').click();
   await page.screenshot({ path: 'test-results/stage4-hq.png' });
   expect(errors).toEqual([]);
@@ -422,4 +437,101 @@ test('challenge mode starts with its own rules', async ({ page }) => {
   await page.getByTestId('mode-shoestring').click();
   await page.getByTestId('start-game').click();
   await expect(page.getByTestId('cash')).toHaveText('$2,000');
+});
+
+test('all four workstations open above the room and return to the studio', async ({ page }) => {
+  await startGame(page, 'STUDIO CLUB');
+  await page.getByTestId('speed-0').click();
+  await page.getByTestId('coach-skip').click();
+  for (const panel of ['lab', 'production', 'shop', 'drops']) {
+    await page.getByTestId('station-' + panel).click();
+    await expect(page.getByTestId('panel-' + panel)).toBeVisible();
+    await expect(page.locator('.studio-backdrop svg')).toBeVisible();
+    await page.getByTestId('studio-back').click();
+    await expect(page.getByTestId('station-' + panel)).toBeVisible();
+  }
+});
+
+test('bags and chains can launch together with an incoming brand collab', async ({ page }) => {
+  await startGame(page, 'NIGHT RUN');
+  await page.getByTestId('speed-0').click();
+  await page.getByTestId('coach-skip').click();
+  await page.getByTestId('station-lab').click();
+  await page.getByTestId('garment-bag').click();
+  await page.getByTestId('design-name').fill('DANUBE BAG');
+  await page.getByTestId('collection-input').fill('AFTER DARK');
+  await page.getByTestId('save-design').click();
+  await page.getByTestId('garment-jewelry').click();
+  await page.getByTestId('design-name').fill('NIGHT CHAIN');
+  await page.getByTestId('save-design').click();
+  await expect(page.getByTestId('collection')).toContainText('DANUBE BAG');
+  await expect(page.getByTestId('collection')).toContainText('NIGHT CHAIN');
+
+  await page.getByTestId('studio-back').click();
+  await page.getByTestId('station-drops').click();
+  await page.getByTestId('add-drop-piece').click();
+  await expect(page.getByText('0 ready by drop day')).toBeVisible();
+  await page.getByTestId('load-drop-collection').click();
+  await expect(page.getByTestId('collection-name')).toHaveValue('AFTER DARK');
+  await expect(page.getByRole('textbox', { name: 'Units for NIGHT CHAIN' })).toBeVisible();
+
+  await page.getByTestId('nav-production').click();
+  for (const name of ['DANUBE BAG', 'NIGHT CHAIN']) {
+    await page.getByTestId('production-design').selectOption({ label: name });
+    await page.getByTestId('qty-input').fill('30');
+    await page.getByTestId('qty-input').press('Enter');
+    await page.getByTestId('place-order').click();
+    await expect(page.getByTestId('shipments')).toContainText(name);
+  }
+
+  await page.getByTestId('speed-4').click();
+  await expect.poll(async () => {
+    await settle(page);
+    return (await state(page))!.orders;
+  }, { timeout: 25_000 }).toBe(0);
+  await page.getByTestId('speed-0').click();
+  await page.getByTestId('nav-shop').click();
+  await page.getByTestId(/^list-/).first().click();
+  const shopPrice = page.getByRole('textbox', { name: 'Price', exact: true }).first();
+  await shopPrice.fill('10');
+  await shopPrice.press('Enter');
+  await page.getByTestId('nav-rivals').click();
+  await page.getByTestId('speed-4').click();
+  await expect.poll(async () => {
+    await settle(page);
+    return page.getByTestId('accept-brand-collab').isVisible();
+  }, { timeout: 25_000 }).toBe(true);
+  await page.getByTestId('speed-0').click();
+  await expect(page.getByTestId('brand-collabs')).toContainText('wants to promote your next drop');
+  await page.screenshot({ path: 'test-results/brand-collab-offer.png' });
+  await page.getByTestId('accept-brand-collab').click();
+  await expect(page.getByTestId('brand-collabs')).toContainText('Your next drop is a collab with');
+
+  await page.getByTestId('nav-drops').click();
+  await page.getByTestId('load-drop-collection').click();
+  await page.getByTestId('drop-units').fill('2');
+  await page.getByRole('textbox', { name: 'Units for NIGHT CHAIN' }).fill('3');
+  await page.getByRole('textbox', { name: 'Units for NIGHT CHAIN' }).press('Enter');
+  await page.getByTestId('drop-days').fill('3');
+  await page.getByTestId('announce-drop').click();
+  const live = page.getByTestId('drop-live');
+  await expect(live).toContainText('AFTER DARK');
+  await expect(live).toContainText('5 units across 2 pieces');
+  await expect(live).toContainText('In collaboration with');
+  await page.screenshot({ path: 'test-results/collection-announced.png' });
+  await page.getByTestId('open-menu').click();
+  await page.getByTestId('menu-save').click();
+  await page.getByTestId('save-slot1').click();
+  await page.reload();
+  await skipIntro(page);
+  await page.getByTestId('continue').click();
+  await page.getByTestId('nav-drops').click();
+  await expect(live).toContainText('AFTER DARK');
+  await page.getByTestId('speed-4').click();
+  await expect.poll(async () => { await settle(page); return page.getByTestId('splash-continue').isVisible(); }, { timeout: 35_000 }).toBe(true);
+  await expect(page.locator('.splash-collection li')).toHaveCount(2);
+  await expect(page.locator('.splash-collection')).toContainText('DANUBE BAG');
+  await expect(page.locator('.splash-collection')).toContainText('NIGHT CHAIN');
+  await expect(page.getByTestId('drop-splash')).toContainText('In collaboration with');
+  await page.screenshot({ path: 'test-results/collection-result.png' });
 });

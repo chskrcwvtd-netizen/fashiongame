@@ -19,6 +19,8 @@ import {
   FINISHES,
   FINISH_IDS,
   LOCKED_GARMENTS,
+  PRODUCT_LINES,
+  lineCost,
   type BackPrint,
   trendDelta,
   trendPop,
@@ -131,6 +133,7 @@ export function DesignLab() {
     const last = s.designs[s.designs.length - 1];
     return last ? { ...DEFAULT, ...last } : DEFAULT;
   });
+  const lockedLines = PRODUCT_LINES.filter((line) => !s.unlocks.includes(line.id));
   const [side, setSide] = useState<'front' | 'back'>('front');
   const set = <K extends keyof DesignInput>(k: K, v: DesignInput[K]) => setDraft((d) => ({ ...d, [k]: v }));
   const fit = marketFit(s, draft);
@@ -165,6 +168,15 @@ export function DesignLab() {
               </Chip>
             ))}
           </div>
+          {lockedLines.length > 0 && (
+            <p className="muted small piece-unlocks">
+              {s.hqLevel < 1 ? 'Move into the Studio for more product lines.' : 'More product lines in Empire.'}
+              {' '}
+              <button className="link" onClick={() => store.setPanel('empire')}>
+                {lockedLines.map((line) => `${line.name} ${money(lineCost(s, line.id))}`).join(' · ')}
+              </button>
+            </p>
+          )}
         </div>
 
         <div className="field">

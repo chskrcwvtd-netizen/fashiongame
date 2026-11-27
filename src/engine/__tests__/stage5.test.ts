@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { advanceDay } from '../tick';
-import { buildOwnFactory, collabWithRival, holiday, maxLoan, takeLoan, tradeShares, toggleSustainability, yearlyShakeUp, CHALLENGES } from '../extras';
+import { answerRivalCollabOffer, processRivalCollabOffers, rivalCollabOffer, buildOwnFactory, collabWithRival, holiday, maxLoan, takeLoan, tradeShares, toggleSustainability, yearlyShakeUp, CHALLENGES } from '../extras';
 import { createNewGame } from '../newGame';
+import { deserialize, serialize } from '../save';
 import { scheduleDrop, botShieldCost } from '../drops';
 import { setListing, simulateWebshopDay, expectedDailySales } from '../webshop';
 import { appeal, createDesign, designQuality } from '../design';
@@ -161,4 +162,36 @@ describe('team and rivals', () => {
     expect(s.rivals.length).toBe(7);
     expect(ev.some((e) => e.type === 'news')).toBe(true);
   });
+});
+
+
+it('brand outreach waits for a sale, survives a save and rejects duplicate or expired replies', () => {
+  const s = newGame();
+  const events: GameEvent[] = [];
+  processRivalCollabOffers(s, events);
+  expect(rivalCollabOffer(s)).toBeNull();
+  s.flags.firstSale = true;
+  processRivalCollabOffers(s, events);
+  expect(events).toHaveLength(1);
+  const restored = deserialize(serialize(s));
+  const offer = rivalCollabOffer(restored)!;
+  const cash = restored.cash;
+  expect(answerRivalCollabOffer(restored, offer.rival.id, false).ok).toBe(true);
+  processRivalCollabOffers(restored, events);
+  expect(rivalCollabOffer(restored)).toBeNull();
+  expect(restored.cash).toBe(cash);
+  restored.day += 42;
+  processRivalCollabOffers(restored, events);
+  const next = rivalCollabOffer(restored)!;
+  restored.day = next.expiresDay;
+  expect(answerRivalCollabOffer(restored, next.rival.id, true).ok).toBe(false);
+  expect(restored.cash).toBe(cash);
+  restored.day += 28;
+  processRivalCollabOffers(restored, events);
+  const fresh = rivalCollabOffer(restored)!;
+  expect(answerRivalCollabOffer(restored, fresh.rival.id, true).ok).toBe(true);
+  expect(restored.cash).toBe(cash - fresh.cost);
+  expect(restored.rivalCollab).toBe(fresh.rival.id);
+  expect(answerRivalCollabOffer(restored, fresh.rival.id, true).ok).toBe(false);
+  expect(restored.cash).toBe(cash - fresh.cost);
 });

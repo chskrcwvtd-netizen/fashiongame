@@ -1,0 +1,127 @@
+.runway-jump {
+  margin-bottom: 12px;
+}
+
+.runway-lineup {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 156px), 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.runway-lineup label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.runway-lineup select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  color: var(--text);
+}
+
+.runway-booked-looks {
+  padding-inline-start: 24px;
+  margin-block: 4px 0;
+  color: var(--muted);
+}
+
+.runway-booked-looks li {
+  display: list-item;
+  border: 0;
+  padding: 2px 0;
+}
+
+.runway-bookings h4,
+.runway-history h4,
+.runway-replay h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.runway-bookings,
+.runway-history,
+.runway-replay {
+  margin-top: 18px;
+}
+
+.runway-replay {
+  border: 1px solid var(--edge-hi);
+  border-radius: var(--r-card);
+  padding: 12px;
+  background: var(--ink);
+}
+
+.runway-stage {
+  display: grid;
+  place-items: center;
+  min-height: min(310px, 66vw);
+  padding: 12px;
+  overflow: hidden;
+  text-align: center;
+  border: 1px solid var(--edge);
+  background:
+    radial-gradient(ellipse at 50% 8%, #d0b7a793, transparent 55%),
+    conic-gradient(from -22deg at 50% 67%, #151111 0deg 44deg, transparent 45deg 158deg, #554951 160deg 204deg, transparent 206deg),
+    linear-gradient(180deg, #25191e 0 66%, #130f12 67% 100%);
+}
+
+.runway-look {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+  animation: runway-entrance 340ms ease-out both;
+}
+
+.runway-look svg {
+  display: block;
+  width: min(270px, 52vw, 100%);
+  max-height: 240px;
+  margin: auto;
+  filter: drop-shadow(0 12px 10px #0b0909);
+}
+
+.runway-look figcaption,
+.runway-verdict {
+  overflow-wrap: anywhere;
+}
+
+.runway-look figcaption span,
+.runway-look figcaption strong {
+  display: block;
+}
+
+.runway-look figcaption span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.runway-verdict strong {
+  color: var(--cyan);
+  font-family: var(--display);
+  font-size: clamp(20px, 4vw, 38px);
+}
+
+.runway-verdict[data-outcome='ovation'] strong {
+  color: var(--acid);
+}
+
+.runway-verdict[data-outcome='panned'] strong {
+  color: var(--red);
+}
+
+.runway-controls {
+  margin-top: 10px;
+}
+
+@keyframes runway-entrance {
+  from { opacity: 0; transform: translateY(-12px) scale(0.88); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runway-look { animation: none; }
+}

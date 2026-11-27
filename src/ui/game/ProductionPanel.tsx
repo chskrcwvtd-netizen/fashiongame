@@ -87,6 +87,10 @@ export function ProductionPanel() {
           {FACTORY_IDS.filter((id) => !LOCKED_FACTORIES[id] || s.unlocks.includes(LOCKED_FACTORIES[id]!)).map((id) => {
             const fd = FACTORIES[id];
             const r = RATINGS[id];
+            const factoryMax = Math.min(space, Math.floor(s.cash / unitCost(s, design, id)), 5000);
+            const canUseFactory = factoryMax >= fd.minOrder;
+            const quotedQty = Math.max(fd.minOrder, Math.min(qty, factoryMax));
+            const risk = id === 'own' ? 'None' : r.risk === 0 ? 'Very low' : r.risk > 2 ? 'High' : 'Low';
             return (
               <button
                 key={id}
@@ -99,6 +103,11 @@ export function ProductionPanel() {
                 aria-pressed={factory === id}
               >
                 <strong className="factory-name">{fd.name}</strong>
+                <span className="factory-summary">
+                  <span><small>Lead time</small><strong>{fd.leadDays} days</strong></span>
+                  <span><small>{canUseFactory ? `Total for ${quotedQty}` : 'Minimum cost'}</small><strong>{money(orderCost(s, { designId: design.id, factoryId: id, quantity: quotedQty }))}</strong></span>
+                  <span><small>Risk</small><strong>{risk}</strong></span>
+                </span>
                 <em>{fd.tagline}</em>
                 <span className="factory-row">
                   Cheap <Dots n={r.price} tone="acid" />
@@ -109,11 +118,8 @@ export function ProductionPanel() {
                 <span className="factory-row">
                   Speed <Dots n={r.speed} tone="cyan" />
                 </span>
-                <span className="factory-row">
-                  Risk <Dots n={r.risk} tone="red" />
-                </span>
                 <span className="factory-foot">
-                  {money(unitCost(s, design, id))} each, quality {designQuality(design, id, s)}, {fd.leadDays} days, min {fd.minOrder}
+                  {money(unitCost(s, design, id))} each, quality {designQuality(design, id, s)}, min {fd.minOrder}
                 </span>
               </button>
             );

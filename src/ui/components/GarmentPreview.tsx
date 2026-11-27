@@ -188,6 +188,8 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
   const pat = `pat-${uid}`;
   const shadeId = `shade-${uid}`;
   const chromeId = `chrome-${uid}`;
+  const weave = `weave-${uid}`;
+  const showTextile = ['tee', 'hoodie', 'cargo', 'puffer', 'cap', 'beanie', 'track', 'jeans', 'shorts', 'bag'].includes(design.garment);
 
   const patternFill = (() => {
     switch (design.pattern) {
@@ -304,10 +306,19 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
           ))}
         </clipPath>
         {patternFill}
+        {showTextile && (
+          <pattern id={weave} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform={design.garment === 'jeans' ? 'rotate(35)' : undefined}>
+            <path d="M0 0h3M0 1.5h3M0 0v3" stroke="#fff" strokeOpacity=".14" strokeWidth=".35" />
+            <path d="M0 2.5h3M2.5 0v3" stroke="#000" strokeOpacity=".35" strokeWidth=".45" />
+          </pattern>
+        )}
         <linearGradient id={shadeId} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff" stopOpacity=".22" />
-          <stop offset=".45" stopColor="#fff" stopOpacity="0" />
-          <stop offset="1" stopColor="#000" stopOpacity=".38" />
+          <stop offset="0" stopColor="#000" stopOpacity=".24" />
+          <stop offset=".27" stopColor="#fff" stopOpacity=".27" />
+          <stop offset=".49" stopColor="#fff" stopOpacity="0" />
+          <stop offset=".73" stopColor="#000" stopOpacity=".20" />
+          <stop offset=".85" stopColor="#fff" stopOpacity=".08" />
+          <stop offset="1" stopColor="#000" stopOpacity=".43" />
         </linearGradient>
         <filter id={`blur-${uid}`}>
           <feGaussianBlur stdDeviation="18" />
@@ -334,6 +345,7 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
           />
         )}
         {patternFill && <rect x="0" y="0" width="300" height="320" fill={`url(#${pat})`} />}
+        {showTextile && <rect width="300" height="320" fill={`url(#${weave})`} opacity={design.material === 'luxe' ? 0.55 : 1} />}
         {!back &&
           shape.lines?.map((d, i) => (
             <path key={`l${i}`} d={d} fill="none" stroke="#000" strokeOpacity=".35" strokeWidth="2" />
@@ -355,6 +367,9 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
           </g>
         )}
         <rect x="0" y="0" width="300" height="320" fill={`url(#${shadeId})`} />
+        {showTextile && shape.body.map((d, i) => (
+          <path key={`seam-${i}`} d={d} fill="none" stroke={shade(p, 0.23)} strokeWidth="5" strokeDasharray="1 3" opacity=".65" />
+        ))}
       </g>
       {!back && shape.inner?.map((d, i) => (
         <path key={`in${i}`} d={d} fill={shade(p, luminance(p) > 0.25 ? -0.3 : -0.06)} stroke={sc} strokeWidth="5" />

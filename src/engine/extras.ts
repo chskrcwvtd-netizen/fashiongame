@@ -3,7 +3,7 @@ import { dateInfo } from './calendar';
 import { newId } from './newGame';
 import { pick } from './rng';
 import { brandValue, playerRank } from './rivals';
-import type { ActionResult, GameEvent, GameState } from './types';
+import type { ActionResult, GameEvent, GameState, Rival } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -128,12 +128,49 @@ export function collabWithRival(state: GameState, rivalId: string): ActionResult
   if (state.rivalCollab) return { ok: false, reason: 'You already have a joint drop lined up.' };
   const cost = rivalCollabCost(state);
   if (state.cash < cost) return { ok: false, reason: 'Not enough cash.' };
+  return signRivalCollab(state, r, cost, -20);
+}
+
+function signRivalCollab(state: GameState, rival: Rival, cost: number, relationChange: number): ActionResult {
   state.cash -= cost;
   state.stats.spent += cost;
-  state.rivalCollab = r.id;
-  r.relation = clamp(r.relation - 20, -100, 100);
-  addPress(state, `${state.brand.name} × ${r.name}: a joint drop is coming`);
+  state.rivalCollab = rival.id;
+  delete state.rivalOffer;
+  rival.relation = clamp(rival.relation + relationChange, -100, 100);
+  addPress(state, `${state.brand.name} × ${rival.name}: a joint drop is coming`);
   return { ok: true };
+}
+
+export function rivalCollabOffer(state: GameState) {
+  const offer = state.rivalOffer;
+  if (state.gameOver || state.rivalCollab || !offer || offer.expiresDay <= state.day) return null;
+  const rival = state.rivals.find((r) => r.id === offer.rivalId);
+  return rival ? { rival, expiresDay: offer.expiresDay, cost: Math.round(1250 * DIFFICULTIES[state.difficulty].costMult) } : null;
+}
+
+export function processRivalCollabOffers(state: GameState, events: GameEvent[]): void {
+  if (rivalCollabOffer(state)) return;
+  delete state.rivalOffer;
+  if (state.gameOver || state.rivalCollab || !state.flags.firstSale || state.day - (state.lastRivalOfferDay ?? -42) < 42) return;
+  const latest = state.designs.at(-1);
+  const available = state.rivals.filter((r) => r.relation >= 0);
+  const rival = available.find((r) => r.vibe === latest?.vibe) ?? available.sort((a, b) => b.relation - a.relation)[0];
+  if (!rival) return;
+  state.rivalOffer = { rivalId: rival.id, expiresDay: state.day + 14 };
+  state.lastRivalOfferDay = state.day;
+  events.push({ type: 'rivalNews', rivalId: rival.id, text: `${rival.name} sent you a collab offer. Check The Chart.` });
+}
+
+export function answerRivalCollabOffer(state: GameState, rivalId: string, accept: boolean): ActionResult {
+  const offer = rivalCollabOffer(state);
+  if (!offer || offer.rival.id !== rivalId) return { ok: false, reason: 'This offer is no longer available.' };
+  if (!accept) {
+    delete state.rivalOffer;
+    return { ok: true };
+  }
+  if (offer.rival.relation < 0) return { ok: false, reason: `${offer.rival.name} wants to repair the relationship first.` };
+  if (state.cash < offer.cost) return { ok: false, reason: 'Not enough cash for the campaign.' };
+  return signRivalCollab(state, offer.rival, offer.cost, 10);
 }
 
 /** Week 1 of each year from year 2: a newcomer joins; after the campaign, the giants reload. */

@@ -1,5 +1,5 @@
 import { STAGE3, playerRank, towerAllowed, HQ_LEVELS, activeDrop, capacity, getDesign, nextHqLevel, stockUnits, incomingUnits, upgradeCost, upgradeHQ, weeklyBillEstimate } from '../../engine';
-import { HQScene } from '../components/HQScene';
+import { IsometricStudio } from '../components/IsometricStudio';
 import { useState } from 'react';
 import { LogoEditor } from '../components/Logo';
 import { count, money, useGame } from '../hooks';
@@ -29,29 +29,48 @@ export function HQPanel() {
   const next = nextHqLevel(s);
   const cost = upgradeCost(s);
   const drop = activeDrop(s);
-  const queue = drop && drop.dropDay - s.day <= 1 ? Math.min(12, 3 + Math.round(drop.hype / 10)) : 0;
   const bills = weeklyBillEstimate(s);
   const best = s.stats.bestSellerId ? getDesign(s, s.stats.bestSellerId) : null;
   const lastWeek = s.stats.weeklyRevenue[s.stats.weeklyRevenue.length - 1] ?? 0;
-  const used = stockUnits(s) + incomingUnits(s);
+  const stock = stockUnits(s);
+  const used = stock + incomingUnits(s);
+  const nextAction = drop
+    ? { panel: 'drops', label: 'View drop' } as const
+    : s.designs.length === 0
+      ? { panel: 'lab', label: 'Design your first piece' } as const
+      : s.orders.length > 0 || stock === 0
+        ? { panel: 'production', label: s.orders.length ? 'Track orders' : 'Plan production' } as const
+        : { panel: 'shop', label: 'Open the webshop' } as const;
 
   return (
     <div className="panel hq-panel" data-testid="panel-hq">
       <div className="hq-stage">
-        <HQScene state={s} queue={queue} courier={store.lastArrivalDay >= s.day - 1} night={(1 - Math.cos(((s.day + store.dayProgress) / 4) * 2 * Math.PI)) / 2} />
-        <button className="btn btn-ghost edit-logo" onClick={() => setEditing(true)} data-testid="edit-logo">
-          Edit logo
-        </button>
         <div className="hq-caption">
           <h2 className="display">{hq.name.toLowerCase()}</h2>
+          <div className="studio-ledger">
+            <span>Stock <strong>{count(stock)}</strong></span>
+            <span>Monday bills <strong>−{money(bills.total)}</strong></span>
+          </div>
           {drop && (
             <p className="hq-drop">
               Drop in {Math.max(0, drop.dropDay - s.day)} {drop.dropDay - s.day === 1 ? 'day' : 'days'}
             </p>
           )}
         </div>
+        <IsometricStudio />
+        <div className="studio-actions">
+          <button className="btn btn-ghost edit-logo" onClick={() => setEditing(true)} data-testid="edit-logo">
+          Edit logo
+        </button>
+          {!store.tutorial && (
+            <div className="hq-next">
+              <button className="btn btn-primary" onClick={() => store.setPanel(nextAction.panel)}>
+                {nextAction.label}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-
       <div className="kpis">
         <div className="kpi">
           <span className="kpi-num money">{money(s.stats.revenueThisWeek, true)}</span>
@@ -118,6 +137,7 @@ export function HQPanel() {
           )}
         </section>
       </div>
+      <div className="hq-photo" data-level={s.hqLevel} aria-hidden="true" />
       {editing && (
         <div className="modal-back" onClick={() => setEditing(false)}>
           <div className="modal" role="dialog" aria-modal="true" aria-label="Edit logo" onClick={(e) => e.stopPropagation()} data-testid="logo-modal">

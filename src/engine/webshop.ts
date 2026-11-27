@@ -15,8 +15,8 @@ export function growthRoom(state: GameState): number {
 /** Units of this design reserved for a scheduled drop. */
 export function reservedUnits(state: GameState, designId: string): number {
   return state.drops
-    .filter((d) => d.status === 'scheduled' && d.designId === designId)
-    .reduce((a, d) => a + d.units, 0);
+    .filter((d) => d.status === 'scheduled')
+    .reduce((total, d) => total + (d.items ? d.items.find((item) => item.designId === designId)?.units ?? 0 : d.designId === designId ? d.units : 0), 0);
 }
 
 export function availableUnits(state: GameState, designId: string): number {

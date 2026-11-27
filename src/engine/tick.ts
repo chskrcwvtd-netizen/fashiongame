@@ -17,7 +17,7 @@ import { availableUnits } from './webshop';
 import { STAGE3 } from './content';
 import { weeklyCorporate } from './corporate';
 import { processShows } from './shows';
-import { checkChallenge, holiday, yearlyShakeUp } from './extras';
+import { checkChallenge, holiday, processRivalCollabOffers, yearlyShakeUp } from './extras';
 import type { GameEvent, GameState } from './types';
 
 /** Advance the simulation by one in-game day. Returns what happened. */
@@ -63,7 +63,10 @@ export function advanceDay(state: GameState): GameEvent[] {
     maybeTriggerEvent(state, events);
     checkMilestones(state, events, newWeek);
     checkChallenge(state, events);
-    if (newWeek) weeklyCampaign(state, events);
+    if (newWeek) {
+      weeklyCampaign(state, events);
+      processRivalCollabOffers(state, events);
+    }
   }
 
   // Buzz cools off; the audience grows a little on its own.

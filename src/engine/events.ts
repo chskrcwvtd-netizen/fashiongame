@@ -909,6 +909,10 @@ export const EVENTS: EventDef[] = [
           if (!d) return 'Your drop already happened.';
           d.price = Math.max(1, Math.round(d.price * 0.85));
           d.hype = clamp(d.hype + 10, 0, 100);
+          if (d.items) {
+            d.items = d.items.map((item) => ({ ...item, price: Math.max(1, Math.round(item.price * 0.85)) }));
+            return 'All collection prices are down 15%. The bargain hunters are coming.';
+          }
           return `New drop price: ${money(d.price)}. The bargain hunters are coming.`;
         },
       },

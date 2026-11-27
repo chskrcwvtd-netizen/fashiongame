@@ -1,4 +1,4 @@
-import { ALL_RIVALS as RIVALS, collabWithRival, rivalCollabCost, COLORS, STAGE3, VIBES, dateInfo, dissRival, leaderboard, relationWord, rivalCooldown, shoutOutRival } from '../../engine';
+import { ALL_RIVALS as RIVALS, answerRivalCollabOffer, collabWithRival, rivalCollabCost, rivalCollabOffer, COLORS, STAGE3, VIBES, dateInfo, dissRival, leaderboard, relationWord, rivalCooldown, shoutOutRival } from '../../engine';
 import { EmblemIcon } from '../components/Emblem';
 import { Wordmark } from '../components/Logo';
 import { count, money, useGame } from '../hooks';
@@ -11,6 +11,8 @@ export function RivalsPanel() {
   const prevMyRank = s.history.rank[s.history.rank.length - 2] ?? myRank;
   const endDay = STAGE3.campaignYears * 364;
   const year = dateInfo(s.day).year;
+  const offer = rivalCollabOffer(s);
+  const partner = s.rivals.find((rival) => rival.id === s.rivalCollab);
 
   const act = (fn: () => { ok: true; text: string } | { ok: false; reason: string }) => {
     const r = store.mutate(fn);
@@ -43,6 +45,33 @@ export function RivalsPanel() {
           )}
         </div>
       </div>
+
+      <section className={`card brand-collab ${offer ? 'has-offer' : ''}`} data-testid="brand-collabs">
+        <h3>Brand collabs</h3>
+        {offer ? (
+          <>
+            <p><strong>{offer.rival.name}</strong> wants to promote your next drop to their audience.</p>
+            <p className="muted small">Campaign cost {money(offer.cost)} · {offer.expiresDay - s.day}d to reply</p>
+            <div className="row">
+              <button className="btn btn-primary" data-testid="accept-brand-collab" onClick={() => store.act(
+                (st) => answerRivalCollabOffer(st, offer.rival.id, true),
+                { sound: 'hire', toast: `Collab booked with ${offer.rival.name}.`, feed: `${offer.rival.name} will promote your next drop.` },
+              )}>Accept offer</button>
+              <button className="btn btn-ghost" data-testid="decline-brand-collab" onClick={() => store.act(
+                (st) => answerRivalCollabOffer(st, offer.rival.id, false),
+                { toast: `Declined ${offer.rival.name}'s offer.` },
+              )}>Decline</button>
+            </div>
+          </>
+        ) : partner ? (
+          <div className="row spread">
+            <p>Your next drop is a collab with <strong>{partner.name}</strong>.</p>
+            <button className="btn" onClick={() => store.setPanel('drops')}>Open drops</button>
+          </div>
+        ) : (
+          <p className="muted small">{s.flags.firstSale ? 'New offers from other brands appear here.' : 'Make your first sale to start receiving offers from other brands.'}</p>
+        )}
+      </section>
 
       <section className="card chart" data-testid="leaderboard">
         <h3>This week's chart</h3>

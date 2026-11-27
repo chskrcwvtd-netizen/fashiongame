@@ -147,6 +147,35 @@ describe('shows', () => {
     for (let i = 0; i < 8; i++) advanceDay(s);
     expect(s.shows.history.length).toBe(1);
   });
+
+  it('keeps the selected looks in order across saves and records them for replay', () => {
+    const s = richFlagship();
+    for (const name of ['BASE TEE', 'NIGHT CARGO', 'STUDIO HOODIE', 'CITY CAP']) withDesign(s, { name });
+    const lookIds = [s.designs[3].id, s.designs[1].id, s.designs[2].id];
+    expect(bookRunway(s, 'small', lookIds).ok).toBe(true);
+    const loaded = deserialize(serialize(s));
+    expect(loaded.shows.applied[0].lookIds).toEqual(lookIds);
+
+    loaded.day = loaded.shows.applied[0].day;
+    const events: GameEvent[] = [];
+    processShows(loaded, events);
+    processShows(loaded, events);
+    expect(events.filter((event) => event.type === 'showResult')).toHaveLength(1);
+    const [show] = deserialize(serialize(loaded)).shows.history;
+    expect(show.looks?.map((look) => look.name)).toEqual(['CITY CAP', 'NIGHT CARGO', 'STUDIO HOODIE']);
+    expect(show.text).toBeTruthy();
+  });
+
+  it('rejects duplicate or missing looks without consuming the runway booking', () => {
+    const s = richFlagship();
+    for (const name of ['FIRST', 'SECOND', 'THIRD']) withDesign(s, { name });
+    const [first, second, third] = s.designs;
+    expect(bookRunway(s, 'small', [first.id, first.id, third.id]).ok).toBe(false);
+    expect(bookRunway(s, 'small', [first.id, second.id, 'missing']).ok).toBe(false);
+    expect(s.cash).toBe(5_000_000);
+    expect(s.shows.applied).toHaveLength(0);
+    expect(bookRunway(s, 'small', [first.id, second.id, third.id]).ok).toBe(true);
+  });
 });
 
 describe('save v4', () => {

@@ -6,7 +6,7 @@ import { randRange } from './rng';
 import { room } from './audience';
 import { cityLevel } from './world';
 import { addPress } from './extras';
-import type { ActionResult, GameEvent, GameState, ShowBudget } from './types';
+import type { ActionResult, Design, GameEvent, GameState, ShowBudget } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -34,15 +34,16 @@ export function fashionWeekBlocker(state: GameState, weekId: string): string | n
   return null;
 }
 
-export function bookFashionWeek(state: GameState, weekId: string, budget: ShowBudget): ActionResult {
+export function bookFashionWeek(state: GameState, weekId: string, budget: ShowBudget, lookIds?: string[]): ActionResult {
   const block = fashionWeekBlocker(state, weekId);
   if (block) return { ok: false, reason: block };
+  if (!validShowLooks(state, lookIds)) return { ok: false, reason: 'Choose three different designs for the lineup.' };
   const cost = showCost(state, budget);
   if (state.cash < cost) return { ok: false, reason: 'Not enough cash for that show.' };
   const w = FASHION_WEEKS.find((x) => x.id === weekId)!;
   state.cash -= cost;
   state.stats.spent += cost;
-  state.shows.applied.push({ id: newId(state, 's'), name: w.name, weekId, budget, day: nextWeekDay(state, w.weekOfYear) });
+  state.shows.applied.push({ id: newId(state, 's'), name: w.name, weekId, budget, day: nextWeekDay(state, w.weekOfYear), ...(lookIds && { lookIds: [...lookIds] }) });
   return { ok: true };
 }
 
@@ -54,23 +55,37 @@ export function runwayBlocker(state: GameState): string | null {
   return null;
 }
 
-export function bookRunway(state: GameState, budget: ShowBudget): ActionResult {
+export function bookRunway(state: GameState, budget: ShowBudget, lookIds?: string[]): ActionResult {
   const block = runwayBlocker(state);
   if (block) return { ok: false, reason: block };
+  if (!validShowLooks(state, lookIds)) return { ok: false, reason: 'Choose three different designs for the lineup.' };
   const cost = showCost(state, budget);
   if (state.cash < cost) return { ok: false, reason: 'Not enough cash for that show.' };
   state.cash -= cost;
   state.stats.spent += cost;
   state.shows.lastRunwayDay = state.day;
-  state.shows.applied.push({ id: newId(state, 's'), name: `${state.brand.name} runway`, weekId: 'runway', budget, day: state.day + 7 });
+  state.shows.applied.push({ id: newId(state, 's'), name: `${state.brand.name} runway`, weekId: 'runway', budget, day: state.day + 7, ...(lookIds && { lookIds: [...lookIds] }) });
   return { ok: true };
 }
 
-/** How strong your best three designs are right now (0..1). */
-export function collectionStrength(state: GameState): number {
-  const scores = state.designs.map((d) => marketFit(state, d) * 0.7 + ((state.inventory[d.id]?.quality ?? 50) / 100) * 0.3).sort((a, b) => b - a);
-  const top = scores.slice(0, 3);
-  return top.length ? top.reduce((a, x) => a + x, 0) / top.length : 0;
+function validShowLooks(state: GameState, lookIds?: string[]): boolean {
+  return lookIds === undefined || (
+    new Set(lookIds).size === 3 && lookIds.length === 3 && lookIds.every((id) => state.designs.some((design) => design.id === id))
+  );
+}
+
+function lookStrength(state: GameState, design: Design): number {
+  return marketFit(state, design) * 0.7 + (state.inventory[design.id]?.quality ?? 50) / 100 * 0.3;
+}
+
+export function bestShowLooks(state: GameState): Design[] {
+  return state.designs.map((design) => ({ design, score: lookStrength(state, design) }))
+    .sort((a, b) => b.score - a.score).slice(0, 3).map(({ design }) => design);
+}
+
+/** How strong the lineup is right now (0..1). */
+export function collectionStrength(state: GameState, looks = bestShowLooks(state)): number {
+  return looks.length ? looks.reduce((sum, design) => sum + lookStrength(state, design), 0) / looks.length : 0;
 }
 
 export function processShows(state: GameState, events: GameEvent[]): void {
@@ -78,8 +93,10 @@ export function processShows(state: GameState, events: GameEvent[]): void {
   if (!due.length) return;
   state.shows.applied = state.shows.applied.filter((a) => a.day > state.day);
   for (const b of due) {
+    const selected = b.lookIds?.map((id) => state.designs.find((design) => design.id === id));
+    const looks = selected?.length === 3 && selected.every((design) => design !== undefined) ? selected : bestShowLooks(state);
     const big = b.weekId === 'runway' ? 0.8 : 1.15;
-    const score = collectionStrength(state) * SHOW_BUDGETS[b.budget].mult * big * (0.8 + state.reputation / 250) * randRange(state, 0.75, 1.25);
+    const score = collectionStrength(state, looks) * SHOW_BUDGETS[b.budget].mult * big * (0.8 + state.reputation / 250) * randRange(state, 0.75, 1.25);
     const outcome = score > 0.85 ? 'ovation' : score > 0.6 ? 'good' : 'panned';
     let text: string;
     if (outcome === 'ovation') {
@@ -99,7 +116,10 @@ export function processShows(state: GameState, events: GameEvent[]): void {
       state.hype = clamp(state.hype - 5, 0, 100);
       text = 'The critics were brutal. "Underground should have stayed underground."';
     }
-    state.shows.history.push({ name: b.name, day: state.day, outcome });
+    state.shows.history.push({
+      id: b.id, name: b.name, day: state.day, outcome, text,
+      looks: looks.map((design) => ({ ...design })), logo: { ...state.brand.logo },
+    });
     if (state.shows.history.length > 20) state.shows.history.shift();
     events.push({ type: 'showResult', name: b.name, outcome, text });
     addPress(state, outcome === 'ovation' ? `${b.name}: ${state.brand.name} brings the house down` : outcome === 'good' ? `${b.name}: ${state.brand.name} delivers` : `${b.name}: critics pan ${state.brand.name}`);

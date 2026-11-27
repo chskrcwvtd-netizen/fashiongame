@@ -43,10 +43,11 @@ export function LiveDrop() {
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!sp) return null;
   const r = sp.result;
-  const design = s.designs.find((d) => d.name === sp.designName);
+  const release = s.drops.find((drop) => drop.result === r);
+  const design = s.designs.find((d) => d.id === release?.designId);
   const comments = design
     ? customerComments(design, {
-        priceRatio: (s.drops.find((d) => d.designId === design.id && d.result === r)?.price ?? fairPrice(s, design, 50)) / fairPrice(s, design, s.inventory[design.id]?.quality ?? 50),
+        priceRatio: (release?.price ?? fairPrice(s, design, 50)) / fairPrice(s, design, s.inventory[design.id]?.quality ?? 50),
         quality: s.inventory[design.id]?.quality ?? 50,
         fit: marketFit(s, design),
         outcome: r.outcome,
@@ -112,6 +113,14 @@ export function LiveDrop() {
                 </span>
               )}
             </div>
+            {r.items && (
+              <ul className="collection-summary splash-collection">
+                {r.items.map((item) => (
+                  <li key={item.designId}>{s.designs.find((piece) => piece.id === item.designId)?.name} · {item.sold}/{item.units} sold</li>
+                ))}
+              </ul>
+            )}
+            {r.partner && <p className="splash-note">In collaboration with {r.partner}</p>}
             {!!r.bots && <p className="splash-note">Bots grabbed about {r.bots} pieces. Real fans are angry. Bot protection next time?</p>}
             {r.raffle && <p className="splash-note">Raffle drop: winners were drawn fairly. The fans love you for it.</p>}
             {r.numbered && <p className="splash-note">Numbered pieces: collectors are already trading them.</p>}
@@ -128,7 +137,7 @@ export function LiveDrop() {
               <button className="btn btn-primary btn-big" onClick={() => store.dismissSplash()} data-testid="splash-continue" autoFocus>
                 Back to work
               </button>
-              {r.outcome === 'soldout' && design && (
+              {r.outcome === 'soldout' && design && !r.items && (
                 <button
                   className="btn"
                   onClick={() => {
