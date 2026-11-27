@@ -12,7 +12,7 @@
     "build": "tsc --noEmit && vite build && node scripts/build-electron.mjs",
     "test": "vitest run",
     "e2e": "playwright test --trace off",
-    "dist:win": "npm run build && electron-builder --win --x64",
+    "dist:win": "npm run build && electron-builder --win portable --x64",
     "start": "npm run build && electron ."
   },
   "devDependencies": {
@@ -55,24 +55,12 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "icon": "build/icon.png"
     },
     "portable": {
       "artifactName": "StreetwearTycoon.exe"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "artifactName": "StreetwearTycoon-Setup.exe"
     }
   }
 }
