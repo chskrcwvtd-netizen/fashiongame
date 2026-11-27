@@ -4,6 +4,7 @@ import { music } from '../../audio/music';
 import { ambience } from '../../audio/sfx';
 import { useStore } from '../hooks';
 import { serialize } from '../../engine';
+import { canSaveFiles } from '../exportImage';
 
 const KEY = 'streetwear-tycoon:settings';
 
@@ -201,30 +202,32 @@ export function SettingsBlock() {
         )}
       </div>
       <p className="muted small">Shortcuts: Space pauses, 1 / 2 / 3 set the speed, Esc opens this menu, Ctrl+Z undoes, letters jump to screens (hover the menu to see them).</p>
-      <div className="music-box">
-        <h3>Report a problem</h3>
-        <textarea className="input feedback" rows={3} value={note} placeholder="What happened? What did you expect?" onChange={(e) => setNote(e.target.value)} data-testid="feedback-text" />
-        <button
-          className="btn"
-          disabled={!note.trim()}
-          onClick={async () => {
-            const text = `${note}\n\n---\nversion: ${__APP_VERSION__}\n${store.state ? serialize(store.state) : 'no game running'}`;
-            if (window.streetwear?.saveFeedback) await window.streetwear.saveFeedback(text);
-            else {
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-              a.download = `streetwear-feedback-${Date.now()}.txt`;
-              a.click();
-            }
-            setSent(true);
-            setNote('');
-          }}
-          data-testid="feedback-send"
-        >
-          Save the report
-        </button>
-        {sent && <p className="small">Saved. The folder with the report is open; send me that file.</p>}
-      </div>
+      {canSaveFiles() && (
+        <div className="music-box">
+          <h3>Report a problem</h3>
+          <textarea className="input feedback" rows={3} value={note} placeholder="What happened? What did you expect?" onChange={(e) => setNote(e.target.value)} data-testid="feedback-text" />
+          <button
+            className="btn"
+            disabled={!note.trim()}
+            onClick={async () => {
+              const text = `${note}\n\n---\nversion: ${__APP_VERSION__}\n${store.state ? serialize(store.state) : 'no game running'}`;
+              if (window.streetwear?.saveFeedback) await window.streetwear.saveFeedback(text);
+              else {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+                a.download = `streetwear-feedback-${Date.now()}.txt`;
+                a.click();
+              }
+              setSent(true);
+              setNote('');
+            }}
+            data-testid="feedback-send"
+          >
+            Save the report
+          </button>
+          {sent && <p className="small">Saved. The folder with the report is open; send me that file.</p>}
+        </div>
+      )}
     </div>
   );
 }

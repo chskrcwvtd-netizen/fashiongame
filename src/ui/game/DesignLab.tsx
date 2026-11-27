@@ -36,7 +36,7 @@ import { GarmentPreview } from '../components/GarmentPreview';
 import { EmblemIcon } from '../components/Emblem';
 import { money, useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
-import { exportImage } from '../exportImage';
+import { canSaveFiles, exportImage } from '../exportImage';
 
 const DEFAULT: DesignInput = {
   name: 'NIGHT SIGNAL HOODIE',
@@ -331,9 +331,11 @@ export function DesignLab() {
           <button className="btn btn-primary btn-big" onClick={save} data-testid="save-design">
             Save design
           </button>
-          <button className="btn btn-ghost" onClick={() => void exportImage(draft.name)} data-testid="export-image" title="Save a picture of this piece">
-            Save as image
-          </button>
+          {canSaveFiles() && (
+            <button className="btn btn-ghost" onClick={() => void exportImage(draft.name)} data-testid="export-image" title="Save a picture of this piece">
+              Save as image
+            </button>
+          )}
         </div>
       </div>
 

@@ -90,10 +90,118 @@ class DesktopBackend implements SaveBackend {
   }
 }
 
+/** Browser storage, or memory where the page may not use it (a sandboxed frame throws on access). */
+function localBackend(): SaveBackend {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      void localStorage.length; // throws where the page is not allowed to use it
+      return new LocalStorageBackend();
+    }
+  } catch {
+    /* blocked */
+  }
+  return new MemoryBackend();
+}
+
+/** The Claude page host (claude.ai artifact) offers a private per-player store. */
+export interface ClaudeHost {
+  use(name: string): Promise<any>;
+}
+interface CloudDoc {
+  get(): Promise<{ exists: boolean; data(): Record<string, unknown> | undefined }>;
+  set(body: Record<string, unknown>): Promise<void>;
+  delete(): Promise<void>;
+}
+declare global {
+  interface Window {
+    claude?: ClaudeHost;
+  }
+}
+
+const newer = (a: string | null, b: string | null) => ((readMeta(b ?? '')?.savedAt ?? -1) > (readMeta(a ?? '')?.savedAt ?? -1) ? b : a);
+
+/**
+ * Web version: saves stay in the browser and, when the game runs as a Claude page (iPhone),
+ * also go to the player's private cloud store, because browser storage there can be wiped.
+ * Reading takes whichever copy was saved last.
+ */
+export class WebBackend implements SaveBackend {
+  private cloud: Promise<((slot: SlotId) => CloudDoc) | null> | null = null;
+  private pending = new Map<SlotId, Record<string, unknown> | null>();
+  private busy = new Set<SlotId>();
+  constructor(
+    private local: SaveBackend = localBackend(),
+    private host: () => ClaudeHost | undefined = () => (typeof window !== 'undefined' ? window.claude : undefined),
+  ) {}
+
+  private docs() {
+    this.cloud ??= (async () => {
+      const h = this.host();
+      if (!h?.use) return null;
+      try {
+        const [db, user] = await Promise.all([h.use('db'), h.use('user')]);
+        const id = db && user ? await user.id() : null;
+        return id ? (slot: SlotId) => db.doc(`data/users/${id}/${slot}`) as CloudDoc : null;
+      } catch {
+        return null;
+      }
+    })();
+    return this.cloud;
+  }
+
+  /** One cloud write at a time per slot; only the latest waiting save is sent. */
+  private push(slot: SlotId, body: Record<string, unknown> | null) {
+    this.pending.set(slot, body);
+    if (this.busy.has(slot)) return;
+    this.busy.add(slot);
+    void (async () => {
+      const doc = await this.docs();
+      while (this.pending.has(slot)) {
+        const next = this.pending.get(slot)!;
+        this.pending.delete(slot);
+        try {
+          if (doc) await (next ? doc(slot).set(next) : doc(slot).delete());
+        } catch {
+          /* the browser copy still has it */
+        }
+      }
+      this.busy.delete(slot);
+    })();
+  }
+
+  async read(slot: SlotId) {
+    const mine = await this.local.read(slot).catch(() => null);
+    const doc = await this.docs();
+    if (!doc) return mine;
+    try {
+      const snap = await doc(slot).get();
+      const text = snap.exists ? snap.data()?.text : null;
+      return newer(mine, typeof text === 'string' ? text : null);
+    } catch {
+      return mine;
+    }
+  }
+  async write(slot: SlotId, text: string) {
+    this.push(slot, { text });
+    await this.local.write(slot, text).catch(() => {});
+  }
+  writeSync(slot: SlotId, text: string) {
+    this.push(slot, { text });
+    try {
+      this.local.writeSync(slot, text);
+    } catch {
+      /* full or blocked */
+    }
+  }
+  async remove(slot: SlotId) {
+    this.push(slot, null);
+    await this.local.remove(slot);
+  }
+}
+
 export function defaultBackend(): SaveBackend {
   if (typeof window !== 'undefined' && window.streetwear?.saves) return new DesktopBackend(window.streetwear.saves);
-  if (typeof localStorage !== 'undefined') return new LocalStorageBackend();
-  return new MemoryBackend();
+  return new WebBackend();
 }
 
 /** Save file = { meta, game } so the menu can list saves without loading them. */

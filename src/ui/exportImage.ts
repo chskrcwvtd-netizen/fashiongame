@@ -1,5 +1,8 @@
 import { sfx } from '../audio/sfx';
 
+/** A Claude page (the iPhone version) is not allowed to save files. */
+export const canSaveFiles = () => typeof window === 'undefined' || !window.claude;
+
 /** Save a picture of the piece on the Design Lab turntable. */
 export async function exportImage(name: string): Promise<void> {
   const el = document.getElementById('lab-turntable');

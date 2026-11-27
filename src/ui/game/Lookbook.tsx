@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { GARMENTS, type Design } from '../../engine';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { useGame } from '../hooks';
-import { exportImage } from '../exportImage';
+import { canSaveFiles, exportImage } from '../exportImage';
 
 /** Where a piece sits on the model (top, bottom, head, feet, accessory). */
 function slot(d: Design): { x: number; y: number; w: number } {
@@ -51,7 +51,7 @@ export function Lookbook() {
           })}
         </div>
       )}
-      {pick && (
+      {pick && canSaveFiles() && (
         <button className="btn btn-primary" onClick={() => void exportImage(s.designs.find((d) => d.id === pick)?.name ?? 'look')} data-testid="lookbook-export">
           Save the selected look as an image
         </button>
