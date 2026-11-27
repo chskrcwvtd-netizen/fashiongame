@@ -2828,12 +2828,18 @@ html {
     padding: 5px 8px;
   }
   .coach {
-    margin-bottom: 8px;
-    padding: 10px 12px;
+    margin-bottom: 6px;
+    padding: 8px 12px;
+    border-width: 1px;
   }
   .coach p {
-    font-size: 14px;
-    margin: 2px 0 8px;
+    font-size: 13px;
+    line-height: 1.35;
+    margin: 2px 0 6px;
+  }
+  .coach .btn {
+    padding: 6px 14px;
+    font-size: 13px;
   }
   .steps {
     margin-bottom: 8px;
@@ -2943,6 +2949,13 @@ html {
   }
   .name-input {
     min-width: 0;
+  }
+  /* the garment preview stays in the page flow: pinned, it slid over the text below */
+  .lab-stage {
+    position: static;
+  }
+  .turntable {
+    max-width: 320px;
   }
   /* main menu and new game */
   .mainmenu {
