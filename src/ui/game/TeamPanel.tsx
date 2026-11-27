@@ -18,6 +18,7 @@ import { money, useGame } from '../hooks';
 import { Avatar as DrawnAvatar } from '../components/Avatar';
 
 const ROLE_COLOR: Record<string, string> = {
+  director: '#e9edf5',
   designer: '#ff3ec8',
   marketer: '#d4ff3a',
   sourcer: '#6cf2ff',

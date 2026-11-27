@@ -16,6 +16,16 @@ import {
   rivalValue,
   sharePriceNow,
   unlockLine,
+  LOAN_SIZES,
+  OWN_FACTORY,
+  buildOwnFactory,
+  maxLoan,
+  ownFactoryCost,
+  sharePrice1pct,
+  sustainabilityCost,
+  takeLoan,
+  toggleSustainability,
+  tradeShares,
 } from '../../engine';
 import { EmblemIcon } from '../components/Emblem';
 import { GarmentPreview } from '../components/GarmentPreview';
@@ -151,6 +161,14 @@ export function EmpirePanel() {
               <p className="big-num">${sharePriceNow(s).toFixed(2)}</p>
               <p className="muted small">Share price. It follows your brand value and how investors feel after each quarterly report.</p>
               <PriceChart series={c.sharePrice} />
+              <div className="row">
+                <button className="btn" onClick={() => store.act((st) => tradeShares(st, true), { toast: 'Bought back 1%.' })} data-testid="buy-shares">
+                  Buy 1% for {money(sharePrice1pct(s), true)}
+                </button>
+                <button className="btn btn-ghost" onClick={() => store.act((st) => tradeShares(st, false), { sound: 'cash', toast: 'Sold 1%.' })} data-testid="sell-shares">
+                  Sell 1%
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -161,6 +179,46 @@ export function EmpirePanel() {
               {ipoBlock && <p className="muted small">{ipoBlock}</p>}
             </>
           )}
+        </section>
+      </div>
+
+      <div className="empire-grid">
+        <section className="card" data-testid="loans-card">
+          <h3>Bank loans</h3>
+          <p className="muted small">Cash now, paid back over 26 weeks with 25% interest. The bank lends up to {money(maxLoan(s), true)} to a brand your size.</p>
+          <div className="row">
+            {LOAN_SIZES.map((a) => (
+              <button key={a} className="btn" disabled={a > maxLoan(s) || (s.loans ?? []).length >= 3} onClick={() => store.act((st) => takeLoan(st, a), { sound: 'cash', toast: `Loan of ${money(a, true)} in the bank.` })} data-testid={`loan-${a}`}>
+                {money(a, true)}
+              </button>
+            ))}
+          </div>
+          {(s.loans ?? []).map((l) => (
+            <p key={l.id} className="small">
+              {l.emergency ? 'Emergency loan' : 'Loan'} of {money(l.principal, true)}: {money(l.weekly)} a week, {l.weeksLeft} weeks left.
+            </p>
+          ))}
+        </section>
+        <section className="card">
+          <h3>Your own factory</h3>
+          {s.unlocks.includes('own_factory') ? (
+            <p className="small">Built. Pick "Your Own Factory" in Factories: cheaper, better and never late.</p>
+          ) : (
+            <>
+              <p className="muted small">Cheaper and better than anyone else, never late, no scandals. Costs {money(OWN_FACTORY.weekly)} a week to run.</p>
+              <button className="btn" disabled={s.cash < ownFactoryCost(s) || s.hqLevel < 2} onClick={() => store.act(buildOwnFactory, { sound: 'upgrade', toast: 'Your factory is open.' })} data-testid="build-factory">
+                Build for {money(ownFactoryCost(s), true)}
+              </button>
+            </>
+          )}
+        </section>
+        <section className="card">
+          <h3>Sustainability programme</h3>
+          <p className="muted small">Recycled packaging and fair wages. Costs about {money(sustainabilityCost(s))} a week, slowly builds reputation.</p>
+          <label className="check">
+            <input type="checkbox" checked={!!s.sustainability} onChange={() => store.act(toggleSustainability)} data-testid="sustainability" />
+            Running
+          </label>
         </section>
       </div>
     </div>

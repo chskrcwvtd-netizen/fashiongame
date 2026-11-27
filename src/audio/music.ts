@@ -1,9 +1,11 @@
 /** Plays the player's own tracks (menu / game / drop) from the music folder, with crossfades. */
 export type Scene = 'menu' | 'game' | 'drop';
+type Track = Scene | 'hype';
 
 class MusicPlayer {
-  private els = new Map<Scene, HTMLAudioElement>();
-  private available = new Set<Scene>();
+  private els = new Map<Track, HTMLAudioElement>();
+  private available = new Set<Track>();
+  private intensity = 0;
   private current: Scene | null = null;
   private fades = new Map<HTMLAudioElement, ReturnType<typeof setInterval>>();
   volume = 0.5;
@@ -12,7 +14,7 @@ class MusicPlayer {
 
   async init() {
     const list = (await window.streetwear?.musicTracks?.()) ?? [];
-    for (const n of list) if (n === 'menu' || n === 'game' || n === 'drop') this.available.add(n);
+    for (const n of list) if (n === 'menu' || n === 'game' || n === 'drop' || n === 'hype') this.available.add(n);
     this.ready = true;
     if (this.current) {
       const c = this.current;
@@ -21,11 +23,11 @@ class MusicPlayer {
     }
   }
 
-  tracks(): Scene[] {
+  tracks(): Track[] {
     return [...this.available];
   }
 
-  private el(scene: Scene): HTMLAudioElement {
+  private el(scene: Track): HTMLAudioElement {
     let a = this.els.get(scene);
     if (!a) {
       a = new Audio(`swt-music://${scene}`);
@@ -66,6 +68,15 @@ class MusicPlayer {
     if (this.current && this.available.has(this.current)) this.fade(this.el(this.current), 0);
     this.current = target;
     if (target && this.enabled && this.available.has(target)) this.fade(this.el(target), this.volume);
+  }
+
+  /** Optional "hype" layer on top of the game track, louder as hype rises. */
+  setIntensity(x: number) {
+    this.intensity = Math.max(0, Math.min(1, x));
+    if (!this.ready || !this.available.has('hype')) return;
+    const on = this.enabled && this.current === 'game';
+    const vol = on ? this.volume * Math.max(0, (this.intensity - 0.35) / 0.65) : 0;
+    this.fade(this.el('hype'), vol, 800);
   }
 
   setVolume(v: number) {

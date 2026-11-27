@@ -7,6 +7,8 @@ import { WORDMARK_FONT } from './Logo';
 interface Props {
   state: GameState;
   queue: number;
+  /** 0 = day, 1 = deep night */
+  night?: number;
   /** a courier unloads boxes at the door */
   courier?: boolean;
 }
@@ -21,11 +23,18 @@ function Box({ x, y, w = 54, h = 40 }: { x: number; y: number; w?: number; h?: n
   );
 }
 
-function Person({ x, y, color, delay, scale = 1 }: { x: number; y: number; color: string; delay: number; scale?: number }) {
+function Person({ x, y, color, delay, scale = 1, work = false }: { x: number; y: number; color: string; delay: number; scale?: number; work?: boolean }) {
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <g className="hq-bob" style={{ animationDelay: `${delay}s` }}>
         <rect x={-13} y={-62} width={26} height={44} rx={10} fill={color} />
+        {work && (
+          <g className="hq-arms">
+            <rect x={-20} y={-58} width={7} height={22} rx={3} fill={color} />
+            <rect x={13} y={-58} width={7} height={22} rx={3} fill={color} />
+            <rect x={-16} y={-40} width={32} height={12} rx={2} fill="#8a6a43" stroke="#2b1f12" />
+          </g>
+        )}
         <rect x={-11} y={-20} width={9} height={20} rx={3} fill="#15121d" />
         <rect x={2} y={-20} width={9} height={20} rx={3} fill="#15121d" />
         <circle cx={0} cy={-72} r={10} fill="#d9b99b" />
@@ -57,7 +66,7 @@ function Rack({ x, y, designs, width = 150 }: { x: number; y: number; designs: D
   );
 }
 
-export function HQScene({ state, queue, courier = false }: Props) {
+export function HQScene({ state, queue, courier = false, night = 0 }: Props) {
   const uid = useId().replace(/:/g, '');
   const level = state.hqLevel;
   const latest = state.designs[state.designs.length - 1];
@@ -272,10 +281,10 @@ export function HQScene({ state, queue, courier = false }: Props) {
       {state.employees.slice(0, 8).map((e, i) => {
         const spots = level === 0 ? [[660, 470], [740, 480]] : level === 1 ? [[600, 460], [700, 470], [780, 455], [200, 470], [860, 480]] : [[330, 470], [440, 480], [540, 465], [250, 485], [760, 480], [820, 470], [880, 485], [210, 470]];
         const [x, y] = spots[i % spots.length];
-        const color = { designer: '#ff3ec8', marketer: '#d4ff3a', sourcer: '#6cf2ff', manager: '#ffc24a', analyst: '#a98bff' }[e.role];
+        const color = { designer: '#ff3ec8', marketer: '#d4ff3a', sourcer: '#6cf2ff', manager: '#ffc24a', analyst: '#a98bff', director: '#e9edf5' }[e.role];
         return (
           <g key={e.id} className={`hq-wander w${i % 3}`}>
-            <Person x={x} y={y} color={color} delay={i * 0.31} scale={0.9} />
+            <Person x={x} y={y} color={color} delay={i * 0.31} scale={0.9} work={i % 2 === 0} />
           </g>
         );
       })}
@@ -316,6 +325,8 @@ export function HQScene({ state, queue, courier = false }: Props) {
           scale={0.85}
         />
       ))}
+      {/* night falls every few days */}
+      <rect x="-600" y="-100" width="2160" height="740" fill="#0a0a2e" opacity={night * 0.45} style={{ transition: 'opacity 1.5s linear', pointerEvents: 'none' }} />
     </svg>
   );
 }

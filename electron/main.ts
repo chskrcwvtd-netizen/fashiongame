@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const SLOTS = new Set(['auto', 'slot1', 'slot2', 'slot3']);
-const MUSIC = ['menu', 'game', 'drop'];
+const MUSIC = ['menu', 'game', 'drop', 'hype'];
 const MUSIC_EXT = ['.mp3', '.ogg', '.wav', '.m4a', '.flac'];
 
 // Your own music: files named menu / game / drop in the music folder, served as swt-music://<name>
@@ -15,7 +15,7 @@ function musicDir(): string {
   fs.mkdirSync(dir, { recursive: true });
   const readme = path.join(dir, 'PUT YOUR TRACKS HERE.txt');
   if (!fs.existsSync(readme)) {
-    fs.writeFileSync(readme, 'Drop your own tracks in this folder, named:\r\n  menu.mp3  - main menu\r\n  game.mp3  - while you play\r\n  drop.mp3  - drop day\r\n(.ogg, .wav, .m4a and .flac work too.) Restart the game to hear them.\r\n');
+    fs.writeFileSync(readme, 'Drop your own tracks in this folder, named:\r\n  menu.mp3  - main menu\r\n  game.mp3  - while you play\r\n  hype.mp3  - optional layer that fades in when hype is high\r\n  drop.mp3  - drop day\r\n(.ogg, .wav, .m4a and .flac work too.) Restart the game to hear them.\r\n');
   }
   return dir;
 }
@@ -71,6 +71,15 @@ function registerIpc() {
   });
   ipcMain.on('app:quit', () => app.quit());
   ipcMain.on('music:open', () => void shell.openPath(musicDir()));
+  ipcMain.handle('feedback:save', (_e, text) => {
+    if (typeof text !== 'string') return false;
+    const dir = path.join(app.getPath('userData'), 'feedback');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `feedback-${Date.now()}.txt`);
+    fs.writeFileSync(file, text.slice(0, 5_000_000), 'utf8');
+    shell.showItemInFolder(file);
+    return true;
+  });
   ipcMain.handle('music:list', () => MUSIC.filter((m) => musicFile(m)));
   ipcMain.handle('capture:rect', async (e, rect, name) => {
     try {

@@ -112,6 +112,9 @@ export function LiveDrop() {
                 </span>
               )}
             </div>
+            {!!r.bots && <p className="splash-note">Bots grabbed about {r.bots} pieces. Real fans are angry. Bot protection next time?</p>}
+            {r.raffle && <p className="splash-note">Raffle drop: winners were drawn fairly. The fans love you for it.</p>}
+            {r.numbered && <p className="splash-note">Numbered pieces: collectors are already trading them.</p>}
             {comments.length > 0 && (
               <ul className="comments splash-comments">
                 {comments.map((c, i) => (

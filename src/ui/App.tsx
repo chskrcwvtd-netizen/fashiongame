@@ -17,7 +17,10 @@ import { WholesalePanel } from './game/WholesalePanel';
 import { StatsPanel } from './game/StatsPanel';
 import { WorldPanel } from './game/WorldPanel';
 import { EmpirePanel } from './game/EmpirePanel';
+import { Lookbook } from './game/Lookbook';
+import { HelpButton, HOTKEYS } from './game/Help';
 import { music } from '../audio/music';
+import { ambience } from '../audio/sfx';
 import { TrendsPanel } from './game/TrendsPanel';
 import { MarketingPanel } from './game/MarketingPanel';
 import { TeamPanel } from './game/TeamPanel';
@@ -60,6 +63,12 @@ function GameScreen() {
           store.setSpeed(0);
         }
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        store.undoLast();
+        return;
+      }
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && HOTKEYS[e.key.toLowerCase()]) store.setPanel(HOTKEYS[e.key.toLowerCase()]);
       if (e.key === '1') store.setSpeed(1);
       if (e.key === '2') store.setSpeed(2);
       if (e.key === '3') store.setSpeed(4);
@@ -86,9 +95,16 @@ function GameScreen() {
         {store.panel === 'stats' && <StatsPanel />}
         {store.panel === 'world' && <WorldPanel />}
         {store.panel === 'empire' && <EmpirePanel />}
+        {store.panel === 'lookbook' && <Lookbook />}
+        <HelpButton panel={store.panel} />
       </main>
       <Feed />
       <Toasts />
+      {store.undo && Date.now() < store.undo.until && (
+        <button className="undo-btn" onClick={() => store.undoLast()} data-testid="undo">
+          Undo: {store.undo.label}
+        </button>
+      )}
       <LiveDrop />
       <EventModal />
       <CampaignSplash />
@@ -108,6 +124,10 @@ export function App() {
     if (intro) return;
     music.setScene(store.phase === 'game' ? 'game' : 'menu');
   }, [store.phase, intro]);
+  const hype = store.state?.hype ?? 0;
+  useEffect(() => music.setIntensity(store.phase === 'game' ? hype / 100 : 0), [hype, store.phase]);
+  const onHq = store.phase === 'game' && store.panel === 'hq';
+  useEffect(() => ambience.set(onHq), [onHq]);
   useEffect(() => {
     store.startClock();
     const onUnload = () => store.saveSync('auto');

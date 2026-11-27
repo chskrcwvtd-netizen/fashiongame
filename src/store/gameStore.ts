@@ -20,7 +20,7 @@ import type { SfxName } from '../audio/sfx';
 
 export const MS_PER_DAY_1X = 2000;
 
-export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team' | 'rivals' | 'wholesale' | 'stats' | 'world' | 'empire';
+export type Panel = 'hq' | 'lab' | 'production' | 'shop' | 'drops' | 'trends' | 'marketing' | 'team' | 'rivals' | 'wholesale' | 'stats' | 'world' | 'empire' | 'lookbook';
 export type Phase = 'menu' | 'game';
 export type Tone = 'money' | 'good' | 'bad' | 'info';
 
@@ -185,9 +185,17 @@ export class GameStore {
   }
 
   // ---- actions ------------------------------------------------------------
+  /** last successful action, undoable for a few seconds */
+  undo: { label: string; snapshot: string; day: number; until: number } | null = null;
+
   act(fn: (s: GameState) => ActionResult, success?: { sound?: SfxName; feed?: string; toast?: string }): ActionResult {
     if (!this.state) return { ok: false, reason: 'No game running.' };
+    const snapshot = serialize(this.state);
     const r = fn(this.state);
+    if (r.ok) {
+      this.undo = { label: success?.toast ?? success?.feed ?? 'Last action', snapshot, day: this.state.day, until: Date.now() + 5000 };
+      if (typeof setTimeout !== 'undefined') setTimeout(() => this.bump(), 5100);
+    }
     if (!r.ok) {
       this.sound.play('error');
       this.toast(r.reason, undefined, 'bad');
@@ -259,6 +267,17 @@ export class GameStore {
 
   dismissEventOutcome() {
     this.eventOutcome = null;
+    this.bump();
+  }
+
+  /** Take back the last action (within 5 s, same day). */
+  undoLast() {
+    const u = this.undo;
+    if (!u || Date.now() > u.until || !this.state || this.state.day !== u.day) return;
+    this.state = deserialize(u.snapshot);
+    this.undo = null;
+    this.toast('Undone', u.label, 'info');
+    this.sound.play('click');
     this.bump();
   }
 
@@ -392,6 +411,18 @@ export class GameStore {
           this.sound.play(e.outcome === 'ovation' ? 'soldout' : e.outcome === 'good' ? 'milestone' : 'flop');
           break;
         case 'subsidiaryIncome':
+          break;
+        case 'bailout':
+          this.toast('Emergency loan', `The bank covered you with ${money(e.amount)}. You pay it back weekly. This only happens once.`, 'bad');
+          this.pushFeed(`Emergency loan: +${money(e.amount)}. No second chances.`, 'bad');
+          this.sound.play('scandal');
+          break;
+        case 'challengeResult':
+          this.eventOutcome = { title: e.won ? `Challenge won: ${e.title}` : `Challenge lost: ${e.title}`, text: e.text };
+          this.sound.play(e.won ? 'milestone' : 'flop');
+          break;
+        case 'news':
+          this.pushFeed(e.text, 'info');
           break;
         case 'campaignEnded':
           if (!s.campaign.endSeen) this.campaignSplash = { kind: 'ended', rank: e.rank };

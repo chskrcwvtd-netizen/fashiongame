@@ -22,4 +22,5 @@ contextBridge.exposeInMainWorld('streetwear', {
   captureRect: (rect: { x: number; y: number; width: number; height: number }, name: string) => ipcRenderer.invoke('capture:rect', rect, name),
   openMusicFolder: () => ipcRenderer.send('music:open'),
   musicTracks: () => ipcRenderer.invoke('music:list'),
+  saveFeedback: (text: string) => ipcRenderer.invoke('feedback:save', text),
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { COLORS, DIFFICULTIES, validateBrandName, type BadgeId, type DifficultyId, type FontId } from '../../engine';
+import { CHALLENGES, COLORS, DIFFICULTIES, validateBrandName, type BadgeId, type DifficultyId, type FontId } from '../../engine';
 import type { SaveMeta } from '../../platform/storage';
 import { EmblemIcon } from '../components/Emblem';
 import { LogoEditor, Wordmark } from '../components/Logo';
@@ -20,12 +20,13 @@ function NewGame({ onBack }: { onBack: () => void }) {
   const [badge, setBadge] = useState<BadgeId>('none');
   const [font, setFont] = useState<FontId>('chrome');
   const [difficulty, setDifficulty] = useState<DifficultyId>('normal');
+  const [mode, setMode] = useState('campaign');
   const err = name.length ? validateBrandName(name) : null;
   const ok = name.trim().length >= 2 && !err;
   const start = () => {
     if (!ok) return;
     sfx.play('upgrade');
-    store.newGame({ brandName: name.toUpperCase(), logo: { glyph, color, badge, font }, difficulty });
+    store.newGame({ brandName: name.toUpperCase(), logo: { glyph, color, badge, font }, difficulty, mode });
   };
   return (
     <div className="newgame" data-testid="new-game">
@@ -61,6 +62,23 @@ function NewGame({ onBack }: { onBack: () => void }) {
                 setFont(l.font ?? 'chrome');
               }}
             />
+          </div>
+          <div className="field">
+            <label>Mode</label>
+            <div className="chips" data-testid="modes">
+              <button className={`chip ${mode === 'campaign' ? 'on' : ''}`} onClick={() => setMode('campaign')} title="Be number one in five years" data-testid="mode-campaign">
+                Five-year goal
+              </button>
+              <button className={`chip ${mode === 'sandbox' ? 'on' : ''}`} onClick={() => setMode('sandbox')} title="Endless money, no bankruptcy" data-testid="mode-sandbox">
+                Sandbox
+              </button>
+              {CHALLENGES.map((c) => (
+                <button key={c.id} className={`chip ${mode === c.id ? 'on' : ''}`} onClick={() => setMode(c.id)} title={c.desc} data-testid={`mode-${c.id}`}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            <span className="muted small">{mode === 'campaign' ? 'Be number one on the chart by the end of year 5.' : mode === 'sandbox' ? 'A billion dollars, no bankruptcy. Just build.' : CHALLENGES.find((c) => c.id === mode)?.desc}</span>
           </div>
           <div className="field">
             <label>Difficulty</label>

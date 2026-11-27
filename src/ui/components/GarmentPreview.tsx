@@ -114,6 +114,20 @@ const SHAPES: Record<DesignInput['garment'], Shape> = {
     graphic: { x: 150, y: 210, size: 50, w: 70 },
     backArea: { x: 150, y: 210, size: 40, w: 70 },
   },
+  jeans: {
+    body: ['M86 40 L214 40 L230 302 L166 302 L150 120 L134 302 L70 302 Z'],
+    trim: ['M86 22 L214 22 L214 40 L86 40 Z'],
+    lines: ['M100 40 Q110 80 140 84', 'M200 40 Q190 80 160 84', 'M150 40 L150 120', 'M74 280 L134 280', 'M166 280 L226 280'],
+    graphic: { x: 112, y: 120, size: 30, w: 40 },
+    backArea: { x: 186, y: 100, size: 30, w: 40 },
+  },
+  shorts: {
+    body: ['M80 70 L220 70 L236 220 L162 226 L150 140 L138 226 L64 220 Z'],
+    trim: ['M80 50 L220 50 L220 70 L80 70 Z'],
+    lines: ['M150 70 L150 140', 'M68 200 L138 206', 'M162 206 L232 200'],
+    graphic: { x: 112, y: 150, size: 32, w: 44 },
+    backArea: { x: 186, y: 130, size: 30, w: 44 },
+  },
   perfume: {
     body: ['M92 126 L208 126 Q232 126 232 150 L232 278 Q232 302 208 302 L92 302 Q68 302 68 278 L68 150 Q68 126 92 126 Z'],
     trim: ['M128 96 L172 96 L172 128 L128 128 Z', 'M116 40 L184 40 Q190 40 190 46 L190 96 L110 96 L110 46 Q110 40 116 40 Z'],
@@ -248,6 +262,15 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
     const id = design.emblem === 'logo' ? logo?.glyph ?? 'star' : design.emblem;
     const fill = design.emblem === 'logo' && logo ? hex(logo.color) : ink;
     graphic = <EmblemShape id={id} fill={fill} hole={hole} x={g.x - g.size / 2} y={g.y - g.size / 2} size={g.size} stitch={stitch} />;
+  } else if (design.graphic === 'pixel' && design.pixels) {
+    const cell = g.size / 8;
+    graphic = (
+      <g>
+        {[...design.pixels].map((c, i) =>
+          c === '1' ? <rect key={i} x={g.x - g.size / 2 + (i % 8) * cell} y={g.y - g.size / 2 + Math.floor(i / 8) * cell} width={cell + 0.3} height={cell + 0.3} fill={ink} /> : null,
+        )}
+      </g>
+    );
   } else if (design.graphic === 'text' && design.text.trim()) {
     const text = design.text.trim();
     const fs = Math.min(g.size * 0.62, (g.w / Math.max(1, text.length)) * 1.7);

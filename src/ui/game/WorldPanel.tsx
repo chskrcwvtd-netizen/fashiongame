@@ -79,6 +79,19 @@ export function WorldPanel() {
                   </span>
                 ))}
               </p>
+              {lvl === 2 && (
+                <svg viewBox="0 0 200 90" className="storefront" aria-hidden="true">
+                  <rect width="200" height="90" fill="#141221" />
+                  <rect x="10" y="30" width="180" height="60" fill="#0b1426" stroke="#c4cad6" strokeWidth="3" />
+                  <rect x="80" y="45" width="40" height="45" fill="#1c1829" stroke="#c4cad6" strokeWidth="2" />
+                  <text x="100" y="22" textAnchor="middle" fontFamily="'Unbounded', sans-serif" fontWeight={800} fontSize="15" fill="none" stroke="#ff3ec8" strokeWidth="1">
+                    {s.brand.name}
+                  </text>
+                  <text x="100" y="84" textAnchor="middle" fontFamily="'Chakra Petch', sans-serif" fontSize="9" fill="#6cf2ff">
+                    {c.name.toUpperCase()}
+                  </text>
+                </svg>
+              )}
               <p className="city-status">{lvl === 2 ? 'Your store is open' : lvl === 1 ? 'Shipping here' : 'Not here yet'}</p>
               {lvl < 2 && (
                 <>

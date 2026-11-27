@@ -38,7 +38,7 @@ export function HQPanel() {
   return (
     <div className="panel hq-panel" data-testid="panel-hq">
       <div className="hq-stage">
-        <HQScene state={s} queue={queue} courier={store.lastArrivalDay >= s.day - 1} />
+        <HQScene state={s} queue={queue} courier={store.lastArrivalDay >= s.day - 1} night={(1 - Math.cos(((s.day + store.dayProgress) / 4) * 2 * Math.PI)) / 2} />
         <button className="btn btn-ghost edit-logo" onClick={() => setEditing(true)} data-testid="edit-logo">
           Edit logo
         </button>

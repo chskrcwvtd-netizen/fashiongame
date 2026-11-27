@@ -137,6 +137,7 @@ test('going broke ends the game with the bankrupt screen', async ({ page }) => {
   await startGame(page, 'BROKE CO');
   await page.evaluate(() => {
     (window as unknown as W).__store.state.cash = 50;
+    (window as unknown as W).__store.state.flags.bailoutUsed = true; // the one emergency loan is spent
   });
   await page.getByTestId('speed-4').click();
   await expect(page.getByTestId('overdrawn')).toBeVisible({ timeout: 20_000 });
@@ -338,4 +339,87 @@ test('stage 4: world, product lines, investors, stock market, takeover, runway',
   await page.getByTestId('nav-hq').click();
   await page.screenshot({ path: 'test-results/stage4-hq.png' });
   expect(errors).toEqual([]);
+});
+
+test('50-question update: modes, hotkeys, help, pixel art, undo, drop options, loans, lookbook, settings', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await skipIntro(page);
+  await page.getByTestId('new-game-btn').click();
+  await page.getByTestId('brand-name').fill('SANDBOX CO');
+  await page.getByTestId('mode-sandbox').click();
+  await page.getByTestId('start-game').click();
+  await expect(page.getByTestId('game')).toBeVisible();
+  await page.evaluate(() => {
+    const st = (window as unknown as W).__store;
+    st.state.lastEventDay = 1e9;
+    st.endTutorial();
+  });
+  await page.getByTestId('speed-0').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.flags.sandbox)).toBe(true);
+
+  // hotkey + help
+  await page.keyboard.press('l');
+  await expect(page.getByTestId('panel-lab')).toBeVisible();
+  await page.getByTestId('help-btn').click();
+  await expect(page.getByTestId('help-pop')).toBeVisible();
+
+  // pixel art + collection + jeans
+  await page.getByTestId('garment-jeans').click();
+  await page.getByTestId('graphic-pixel').click();
+  await page.getByTestId('pixel-grid').locator('button').first().click();
+  await page.getByTestId('collection-input').fill('NIGHT');
+  await page.getByTestId('save-design').click();
+  const d = await page.evaluate(() => (window as unknown as W).__store.state.designs[0]);
+  expect(d.garment).toBe('jeans');
+  expect(d.collection).toBe('NIGHT');
+  expect(d.pixels[0]).toBe('1');
+
+  // order, then undo it
+  await page.keyboard.press('f');
+  await page.getByTestId('place-order').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.orders.length)).toBe(1);
+  await page.getByTestId('undo').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.orders.length)).toBe(0);
+
+  // pre-order drop with bot protection, no stock needed
+  await page.getByTestId('place-order').click();
+  await page.keyboard.press('d');
+  await page.getByTestId('opt-preorder').check();
+  await page.getByTestId('opt-botShield').check();
+  await page.getByTestId('announce-drop').click();
+  const drop = await page.evaluate(() => (window as unknown as W).__store.state.drops[0]);
+  expect(drop.preorder).toBe(true);
+  expect(drop.botShield).toBe(true);
+
+  // loans in the Empire
+  await page.keyboard.press('x');
+  await page.getByTestId('loan-10000').click();
+  expect(await page.evaluate(() => (window as unknown as W).__store.state.loans.length)).toBe(1);
+
+  // lookbook
+  await page.keyboard.press('k');
+  await expect(page.getByTestId('panel-lookbook').locator('figure')).toHaveCount(1);
+
+  // settings: sound pack and interface size
+  await page.getByTestId('open-menu').click();
+  await page.getByText('Settings').click();
+  await page.getByTestId('pack-rage').click();
+  await page.getByTestId('scale-1.15').click();
+  expect(await page.evaluate(() => (document.documentElement.style as unknown as { zoom: string }).zoom)).toBe('1.15');
+  await page.getByTestId('scale-1').click();
+  expect(errors).toEqual([]);
+});
+
+test('challenge mode starts with its own rules', async ({ page }) => {
+  await page.goto('/');
+  await skipIntro(page);
+  await page.getByTestId('new-game-btn').click();
+  await page.getByTestId('brand-name').fill('SHOE CO');
+  await page.getByTestId('mode-shoestring').click();
+  await page.getByTestId('start-game').click();
+  await expect(page.getByTestId('cash')).toHaveText('$2,000');
 });

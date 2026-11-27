@@ -53,6 +53,8 @@ const DEFAULT: DesignInput = {
   finish: 'print',
   back: 'logo',
   backText: '',
+  collection: '',
+  pixels: '0000000000011000001111000111111001111110001111000001100000000000',
 };
 
 const GARMENT_ICONS: Record<string, string> = {
@@ -67,6 +69,8 @@ const GARMENT_ICONS: Record<string, string> = {
   bag: 'M5 9h14v12H5zM8 9a4 6 0 0 1 8 0',
   jewelry: 'M4 2q8 12 16 0M12 12l4 4-4 7-4-7z',
   perfume: 'M7 9h10v13H7zM10 6h4v3h-4zM9 2h6v4H9z',
+  jeans: 'M6 2h12l1 20h-5l-2-13-2 13H5z',
+  shorts: 'M5 5h14l1 11-6 1-2-6-2 6-6-1z',
 };
 
 const GARMENT_SUFFIX = new RegExp(`(${Object.values(GARMENTS).map((g) => g.name.toUpperCase()).sort((a, b) => b.length - a.length).join('|')})$`);
@@ -186,9 +190,9 @@ export function DesignLab() {
         <div className="field">
           <label>Graphic</label>
           <div className="chips">
-            {(['none', 'text', 'emblem'] as GraphicKind[]).map((k) => (
+            {(['none', 'text', 'emblem', 'pixel'] as GraphicKind[]).map((k) => (
               <Chip key={k} value={k} current={draft.graphic} onPick={(v) => set('graphic', v)} testid={`graphic-${k}`}>
-                {k === 'none' ? 'Clean' : k === 'text' ? 'Text' : 'Emblem'}
+                {k === 'none' ? 'Clean' : k === 'text' ? 'Text' : k === 'emblem' ? 'Emblem' : 'Pixel art'}
               </Chip>
             ))}
           </div>
@@ -202,6 +206,22 @@ export function DesignLab() {
                   </Chip>
                 ))}
               </div>
+            </div>
+          )}
+          {draft.graphic === 'pixel' && (
+            <div className="pixel-grid" role="grid" aria-label="Pixel art editor" data-testid="pixel-grid">
+              {[...(draft.pixels ?? '0'.repeat(64))].map((c, i) => (
+                <button
+                  key={i}
+                  className={c === '1' ? 'on' : ''}
+                  aria-label={`Pixel ${i + 1}`}
+                  onClick={() => {
+                    const p = [...(draft.pixels ?? '0'.repeat(64))];
+                    p[i] = p[i] === '1' ? '0' : '1';
+                    set('pixels', p.join(''));
+                  }}
+                />
+              ))}
             </div>
           )}
           {draft.graphic === 'emblem' && (
@@ -229,6 +249,11 @@ export function DesignLab() {
           <span className="muted small heat-legend">
             <i className="legend-hot" /> hot right now <i className="legend-rising" /> rising
           </span>
+        </div>
+
+        <div className="field">
+          <label htmlFor="collection-name">Collection (optional): 3 live pieces with the same name sell 12% better</label>
+          <input id="collection-name" className="input" maxLength={24} value={draft.collection ?? ''} placeholder="e.g. NIGHT SHIFT" onChange={(e) => set('collection', e.target.value.toUpperCase())} data-testid="collection-input" />
         </div>
 
         <div className="field">

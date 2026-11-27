@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   ECON,
   activeDrop,
+  botShieldCost,
+  freeCapacity,
   dropDemand,
   fairPrice,
   getDesign,
@@ -72,6 +74,8 @@ function PlanDrop() {
   const [days, setDays] = useState(7);
   const design = designId ? getDesign(s, designId) : undefined;
   const ready = design ? unitsReadyBy(s, design.id, s.day + days) : 0;
+  const [opts, setOpts] = useState({ numbered: false, preorder: false, raffle: false, botShield: false });
+  const maxUnits = Math.max(1, Math.min(opts.numbered ? 100 : Infinity, opts.preorder ? ready + freeCapacity(s) : ready));
   const quality = design ? s.inventory[design.id]?.quality ?? 50 : 50;
   const fair = design ? fairPrice(s, design, quality) : 50;
   const [units, setUnits] = useState(Math.min(50, ready));
@@ -79,7 +83,7 @@ function PlanDrop() {
   useEffect(() => {
     if (!designId && preferred) setDesignId(preferred);
   }, [designId, preferred]);
-  useEffect(() => setUnits((u) => Math.max(1, Math.min(u || Math.min(50, ready), ready))), [ready]);
+  useEffect(() => setUnits((u) => Math.max(1, Math.min(u || Math.min(50, ready), maxUnits))), [ready, maxUnits]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => setPrice(Math.round(fair * 1.2)), [designId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!design) {
@@ -94,7 +98,7 @@ function PlanDrop() {
   }
   // Rough projection: assume hype grows to what a week of buzz gives.
   const expectHype = Math.min(85, s.hype * 0.6 + 5 + Math.min(days, 8) * 4);
-  const projected = dropDemand(s, { designId: design.id, price, hype: expectHype });
+  const projected = dropDemand(s, { designId: design.id, price, hype: expectHype, numbered: opts.numbered, raffle: opts.raffle });
 
   return (
     <div className="drop-plan card" data-testid="drop-plan">
@@ -113,8 +117,10 @@ function PlanDrop() {
           </select>
         </div>
         <div className="field">
-          <label>Units for the drop: {units} of {ready} ready</label>
-          <input type="range" min={1} max={Math.max(1, ready)} value={units} onChange={(e) => setUnits(Number(e.target.value))} data-testid="drop-units" />
+          <label>
+            Units for the drop: {units} ({ready} ready{opts.preorder ? ', the rest made after pre-orders' : ''})
+          </label>
+          <input type="range" min={1} max={maxUnits} value={units} onChange={(e) => setUnits(Number(e.target.value))} data-testid="drop-units" />
         </div>
         <div className="field">
           <label>Drop price</label>
@@ -128,13 +134,29 @@ function PlanDrop() {
           <input type="range" min={ECON.dropMinDays} max={ECON.dropMaxDays} value={days} onChange={(e) => setDays(Number(e.target.value))} data-testid="drop-days" />
           <span className="muted small">About a week is the sweet spot. Longer and people lose interest.</span>
         </div>
+        <div className="drop-opts">
+          {(
+            [
+              ['numbered', 'Numbered 1/100', 'Max 100 pieces, collectors pay about 35% more'],
+              ['preorder', 'Pre-orders', 'Take 20% up front and make the rest before drop day'],
+              ['raffle', 'Raffle', 'Fairer for fans: more buzz, no bots'],
+              ['botShield', `Bot protection (${money(botShieldCost(s, units))})`, 'Stops bots grabbing a hot drop'],
+            ] as const
+          ).map(([k, label, hint]) => (
+            <label key={k} className="check" title={hint}>
+              <input type="checkbox" checked={opts[k]} onChange={(e) => setOpts({ ...opts, [k]: e.target.checked })} data-testid={`opt-${k}`} />
+              {label}
+              <span className="muted small">{hint}</span>
+            </label>
+          ))}
+        </div>
         <div className="row spread">
           <Outlook demand={projected} units={units} />
           <button
             className="btn btn-primary btn-big"
             data-testid="announce-drop"
             onClick={() => {
-              const r = store.act((st) => scheduleDrop(st, { designId: design.id, units, price, daysAhead: days }), {
+              const r = store.act((st) => scheduleDrop(st, { designId: design.id, units, price, daysAhead: days, ...opts }), {
                 sound: 'dropAnnounce',
                 feed: `Drop announced: ${units}× ${design.name} at ${money(price)} in ${days} days.`,
                 toast: 'Drop announced. Build the hype.',

@@ -3,6 +3,7 @@ import { useGame } from '../hooks';
 import { sfx } from '../../audio/sfx';
 import { activeDrop, playerRank } from '../../engine';
 import { coachStep } from './Moments';
+import { HOTKEYS } from './Help';
 
 const ITEMS: { id: Panel; label: string; icon: string }[] = [
   { id: 'hq', label: 'HQ', icon: 'M3 21V9l9-6 9 6v12h-6v-7H9v7z' },
@@ -18,10 +19,11 @@ const ITEMS: { id: Panel; label: string; icon: string }[] = [
   { id: 'world', label: 'World', icon: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM2 12h20M12 2c3 3 4 6 4 10s-1 7-4 10c-3-3-4-6-4-10s1-7 4-10z' },
   { id: 'empire', label: 'Empire', icon: 'M3 21h18M5 21V10l7-6 7 6v11M9 21v-6h6v6' },
   { id: 'stats', label: 'Numbers', icon: 'M3 3v18h18M7 14l4-4 3 3 6-6' },
+  { id: 'lookbook', label: 'Lookbook', icon: 'M4 7h4l2-3h4l2 3h4v13H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z' },
 ];
 
 const LOCKED: string[] = [];
-const STROKE = new Set<Panel>(['trends', 'marketing', 'team', 'rivals', 'wholesale', 'stats', 'world', 'empire']);
+const STROKE = new Set<Panel>(['trends', 'marketing', 'team', 'rivals', 'wholesale', 'stats', 'world', 'empire', 'lookbook']);
 
 export function NavRail() {
   const { store, s } = useGame();
@@ -41,6 +43,7 @@ export function NavRail() {
           }}
           onMouseEnter={() => sfx.play('hover')}
           data-testid={`nav-${it.id}`}
+          title={`${it.label} (${(Object.entries(HOTKEYS).find(([, p]) => p === it.id)?.[0] ?? '').toUpperCase()})`}
         >
           <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
             {STROKE.has(it.id) ? (

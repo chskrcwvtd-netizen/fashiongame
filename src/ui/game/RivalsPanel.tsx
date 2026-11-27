@@ -1,4 +1,4 @@
-import { COLORS, RIVALS, STAGE3, VIBES, dateInfo, dissRival, leaderboard, relationWord, rivalCooldown, shoutOutRival } from '../../engine';
+import { ALL_RIVALS as RIVALS, collabWithRival, rivalCollabCost, COLORS, STAGE3, VIBES, dateInfo, dissRival, leaderboard, relationWord, rivalCooldown, shoutOutRival } from '../../engine';
 import { EmblemIcon } from '../components/Emblem';
 import { Wordmark } from '../components/Logo';
 import { count, money, useGame } from '../hooks';
@@ -99,6 +99,11 @@ export function RivalsPanel() {
                 <button className="btn btn-ghost" disabled={cd > 0} onClick={() => act(() => shoutOutRival(s, r.id))} data-testid={`shout-${r.id}`}>
                   Shout-out
                 </button>
+                {r.relation >= 50 && (
+                  <button className="btn" disabled={!!s.rivalCollab || s.cash < rivalCollabCost(s)} onClick={() => store.act((st) => collabWithRival(st, r.id), { sound: 'hire', toast: `Joint drop with ${r.name} lined up. Plan a drop.` })} data-testid={`joint-${r.id}`}>
+                    Joint drop ({money(rivalCollabCost(s), true)})
+                  </button>
+                )}
                 {cd > 0 && <span className="muted small">again in {cd}d</span>}
               </div>
             </section>

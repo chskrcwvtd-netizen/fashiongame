@@ -90,6 +90,9 @@ function Row({ d }: { d: Design }) {
         <button className="step" onClick={() => setPrice(price + 5)} aria-label="Raise price by 5">
           +
         </button>
+        <button className="link small" onClick={() => setPrice(Math.max(1, Math.round(fair * 0.6)))} title="Mark it down to 60% of the fair price" data-testid={`clearance-${d.id}`}>
+          Clearance sale
+        </button>
         <span className={`hint ${ratio > 1.08 ? 'warn' : ''}`}>
           {hint}. Customers expect about {money(fair)}.
         </span>

@@ -37,6 +37,7 @@ declare global {
       captureRect?(rect: { x: number; y: number; width: number; height: number }, name: string): Promise<boolean>;
       openMusicFolder?(): void;
       musicTracks?(): Promise<string[]>;
+      saveFeedback?(text: string): Promise<boolean>;
     };
   }
 }

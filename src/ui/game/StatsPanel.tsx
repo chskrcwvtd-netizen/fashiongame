@@ -93,6 +93,24 @@ export function StatsPanel() {
             </p>
           )}
         </section>
+        <section className="card press" data-testid="press">
+          <h3>In the press</h3>
+          {(s.press ?? []).length === 0 ? (
+            <p className="muted small">Nobody is writing about you yet. Sell out a drop.</p>
+          ) : (
+            <ul>
+              {(s.press ?? []).slice(0, 8).map((p, i) => (
+                <li key={i}>
+                  <span className="mag">{p.mag}</span>
+                  <strong>{p.headline}</strong>
+                  <span className="muted small">
+                    {dateInfo(p.day).season}, year {dateInfo(p.day).year}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
         <section className="card trophies" data-testid="trophies">
           <h3>
             Trophy wall: {earned.length} / {MILESTONES.length}

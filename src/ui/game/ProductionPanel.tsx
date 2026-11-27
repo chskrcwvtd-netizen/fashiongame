@@ -31,6 +31,7 @@ const RATINGS: Record<FactoryId, { price: number; quality: number; speed: number
   danube: { price: 3, quality: 3, speed: 3, risk: 1 },
   nord: { price: 1, quality: 5, speed: 1, risk: 0 },
   vela: { price: 1, quality: 4, speed: 4, risk: 1 },
+  own: { price: 4, quality: 4, speed: 4, risk: 0 },
 };
 
 export function ProductionPanel() {

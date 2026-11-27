@@ -20,13 +20,14 @@ export type SfxName =
   | 'hire'
   | 'milestone'
   | 'intro'
-  | 'tick';
+  | 'tick'
+  | 'beat';
 
-export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade', 'event', 'viral', 'hire', 'milestone', 'intro', 'tick'];
+export const SFX_NAMES: SfxName[] = ['click', 'hover', 'cash', 'arrived', 'notify', 'dropAnnounce', 'soldout', 'flop', 'error', 'scandal', 'bankrupt', 'upgrade', 'event', 'viral', 'hire', 'milestone', 'intro', 'tick', 'beat'];
 
 export const SFX_LENGTH: Record<SfxName, number> = {
   click: 0.12, hover: 0.05, cash: 0.9, arrived: 0.6, notify: 0.8, dropAnnounce: 1.4, soldout: 3.2,
-  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6, event: 1.0, viral: 2.0, hire: 0.9, milestone: 2.2, intro: 2.6, tick: 0.1,
+  flop: 1.4, error: 0.4, scandal: 1.6, bankrupt: 3.0, upgrade: 1.6, event: 1.0, viral: 2.0, hire: 0.9, milestone: 2.2, intro: 2.6, tick: 0.1, beat: 2.4,
 };
 
 interface Bus {
@@ -318,6 +319,18 @@ export function scheduleSfx(ctx: BaseAudioContext, out: AudioNode, name: SfxName
       bell(bus, bus.wet, midi(86), t + 0.08, 0.35, 0.3);
       bell(bus, bus.wet, midi(91), t + 0.16, 0.5, 0.28);
       break;
+    case 'beat': {
+      // a short collab teaser loop: 808, hats, a glassy riff
+      const step = 0.15;
+      for (let i = 0; i < 16; i++) {
+        const t0 = t + i * step;
+        if (i % 2 === 0) noise(bus, bus.dry, t0, { a: 0.001, d: 0.04, peak: 0.12 }, { type: 'highpass', freq: 7000 });
+        if (i === 0 || i === 6 || i === 10) eightOhEight(bus, bus.dry, t0, 110, 42, 0.4, 0.8);
+        if (i === 4 || i === 12) noise(bus, bus.dry, t0, { a: 0.001, d: 0.12, peak: 0.3 }, { type: 'bandpass', freq: 1800, q: 1 });
+        if ([0, 3, 6, 8, 11, 14].includes(i)) bell(bus, bus.wet, midi([76, 79, 83, 79, 76, 74][[0, 3, 6, 8, 11, 14].indexOf(i)]), t0, 0.2, 0.16);
+      }
+      break;
+    }
     case 'tick':
       tone(bus, bus.dry, 'square', 2200, t, { d: 0.018, peak: 0.07 });
       break;
@@ -367,16 +380,22 @@ export class SfxPlayer {
   muted = false;
   /** small UI blips (click/hover) can be switched off */
   uiSounds = true;
+  /** sound character: hyperpop (default), rage (darker, lower), lofi (muffled) */
+  pack: 'hyperpop' | 'rage' | 'lofi' = 'hyperpop';
+  private tone: BiquadFilterNode | null = null;
 
   private ensure(): AudioContext | null {
     if (typeof window === 'undefined' || typeof AudioContext === 'undefined') return null;
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
-      this.master.connect(this.ctx.destination);
+      this.tone = this.ctx.createBiquadFilter();
+      this.tone.type = 'lowpass';
+      this.master.connect(this.tone).connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.master!.gain.value = this.muted ? 0 : this.volume;
+    if (this.tone) this.tone.frequency.value = this.pack === 'lofi' ? 2600 : 20000;
     return this.ctx;
   }
 
@@ -399,7 +418,7 @@ export class SfxPlayer {
     this.last[name] = now;
     const ctx = this.ensure();
     if (!ctx || !this.master) return;
-    const variation = name === 'cash' ? [0, 2, -3, 5][Math.floor(Math.random() * 4)] : 0;
+    const variation = (name === 'cash' ? [0, 2, -3, 5][Math.floor(Math.random() * 4)] : 0) + (this.pack === 'rage' ? -4 : 0);
     try {
       scheduleSfx(ctx, this.master, name, ctx.currentTime + 0.01, variation);
     } catch {
@@ -409,3 +428,46 @@ export class SfxPlayer {
 }
 
 export const sfx = new SfxPlayer();
+
+/** Quiet city hum for the HQ screen. */
+class Ambience {
+  private ctx: AudioContext | null = null;
+  private gain: GainNode | null = null;
+  enabled = true;
+  private on = false;
+
+  set(on: boolean) {
+    this.on = on;
+    if (typeof AudioContext === 'undefined') return;
+    if (on && this.enabled && !this.ctx) {
+      try {
+        const ctx = new AudioContext();
+        const src = ctx.createBufferSource();
+        src.buffer = noiseBuffer(ctx);
+        src.loop = true;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 380;
+        const g = ctx.createGain();
+        g.gain.value = 0;
+        src.connect(lp).connect(g).connect(ctx.destination);
+        src.start();
+        this.ctx = ctx;
+        this.gain = g;
+      } catch {
+        return;
+      }
+    }
+    if (this.gain && this.ctx) {
+      const target = this.on && this.enabled && !sfx.muted ? 0.035 * sfx.volume : 0;
+      this.gain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.6);
+    }
+  }
+
+  setEnabled(v: boolean) {
+    this.enabled = v;
+    this.set(this.on);
+  }
+}
+
+export const ambience = new Ambience();

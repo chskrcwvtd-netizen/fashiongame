@@ -180,7 +180,7 @@ export function MarketingPanel() {
                     className="btn"
                     disabled={small || !!collab || s.cash < fee}
                     data-testid={`collab-${a.id}`}
-                    onClick={() => store.act((st) => signCollab(st, a.id), { sound: 'hire', toast: `${a.name} signed. Plan a drop.`, feed: `Collab signed with ${a.name}.` })}
+                    onClick={() => store.act((st) => signCollab(st, a.id), { sound: 'beat', toast: `${a.name} signed. Plan a drop.`, feed: `Collab signed with ${a.name}.` })}
                   >
                     Sign for {money(fee)}
                   </button>
