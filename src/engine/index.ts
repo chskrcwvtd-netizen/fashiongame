@@ -24,3 +24,4 @@ export * from './audience';
 export * from './world';
 export * from './corporate';
 export * from './shows';
+export * from './extras';

@@ -1,4 +1,5 @@
 import { playerRank } from './rivals';
+import { addPress } from './extras';
 import type { GameEvent, GameState } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -56,6 +57,7 @@ export function checkMilestones(state: GameState, events: GameEvent[], withRank:
     if (!m.check(state, rank)) continue;
     state.milestones[m.id] = state.day;
     m.grant(state);
+    addPress(state, `${state.brand.name}: ${m.title}. ${m.desc}`);
     events.push({ type: 'milestone', id: m.id, title: m.title, reward: m.reward });
   }
 }

@@ -1,9 +1,10 @@
-import { DIFFICULTIES, ECON, GARMENTS, HQ_LEVELS } from './content';
+import { CITIES, DIFFICULTIES, ECON, GARMENTS, HQ_LEVELS } from './content';
 import { appeal, fairPrice, getDesign, priceFactor, seasonFactor } from './design';
 import { poisson } from './rng';
 import { visitorMult } from './marketing';
 import { engagedFollowers, room } from './audience';
-import { localBonus, worldVisitorMult, worldWalkIns } from './world';
+import { cityLevel, localBonus, worldVisitorMult, worldWalkIns } from './world';
+import { holidayMult } from './extras';
 import type { ActionResult, GameEvent, GameState } from './types';
 
 /** 1 → 0 as followers approach the market ceiling (home market plus cities abroad). */
@@ -77,12 +78,15 @@ export function expectedDailySales(state: GameState, designId: string, priceOver
     seasonFactor(state, design) *
     g.demand *
     DIFFICULTIES[state.difficulty].demandMult *
-    localBonus(state, design)
+    localBonus(state, design) *
+    holidayMult(state)
   );
 }
 
 export function recordSale(state: GameState, designId: string, units: number, grossRevenue: number, events: GameEvent[]) {
-  const net = grossRevenue * (1 - ECON.platformCut);
+  // shipping abroad costs customs: +0.5% per city you only ship to
+  const customs = CITIES.filter((c) => cityLevel(state, c.id) === 1).length * 0.005;
+  const net = grossRevenue * (1 - ECON.platformCut - customs);
   state.cash += net;
   state.stats.revenue += net;
   state.stats.revenueThisWeek += net;
@@ -107,7 +111,10 @@ export function simulateWebshopDay(state: GameState, events: GameEvent[]): void 
     l.soldToday += sold;
     l.soldWeek += sold;
     l.soldTotal += sold;
-    const revenue = sold * l.price;
+    // poor quality comes back: refunded and written off
+    const returned = lot.quality < 35 ? Math.round((sold * (35 - lot.quality)) / 100) : 0;
+    const revenue = (sold - returned) * l.price;
+    if (returned) state.reputation = Math.max(0, state.reputation - Math.min(1, returned * 0.1));
     recordSale(state, l.designId, sold, revenue, events);
     const a = appeal(state, design, lot.quality);
     state.followers += Math.round(sold * ECON.followersPerSale * a * growthRoom(state));

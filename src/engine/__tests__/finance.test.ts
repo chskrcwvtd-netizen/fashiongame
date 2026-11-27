@@ -29,14 +29,18 @@ describe('finance', () => {
     const bill = ev.find((e) => e.type === 'bills');
     expect(bill && bill.type === 'bills' && bill.storage).toBeCloseTo(60, 5);
   });
-  it('overdrawn then bankrupt after grace', () => {
+  it('overdrawn then bankrupt after grace (Normal gets one emergency loan first)', () => {
     const s = newGame();
     s.cash = 100;
     const ev = runDays(s, 7);
     expect(ev.some((e) => e.type === 'overdrawn')).toBe(true);
     expect(s.overdrawnSince).toBe(8);
     const ev2 = runDays(s, 14);
-    expect(ev2.some((e) => e.type === 'bankrupt')).toBe(true);
+    expect(ev2.some((e) => e.type === 'bailout')).toBe(true);
+    expect(s.gameOver).toBeNull();
+    s.cash = -1;
+    const ev3 = runDays(s, 21);
+    expect(ev3.some((e) => e.type === 'bankrupt')).toBe(true);
     expect(s.gameOver?.reason).toBe('bankrupt');
   });
   it('hard has a shorter grace than easy', () => {

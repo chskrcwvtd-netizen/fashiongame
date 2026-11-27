@@ -2,6 +2,7 @@ import { DIFFICULTIES, FUNDING_ROUNDS, PRODUCT_LINES, STAGE4 } from './content';
 import { chance, randRange } from './rng';
 import { brandValue, rivalValue } from './rivals';
 import { room } from './audience';
+import { addPress } from './extras';
 import type { ActionResult, Corporate, GameEvent, GameState } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -54,6 +55,7 @@ export function acquireRival(state: GameState, rivalId: string): ActionResult {
   state.reputation = clamp(state.reputation + 3, 0, 100);
   state.corporate.subsidiaries.push({ rivalId: r.id, name: r.name, weeklyIncome: Math.round(r.weeklyRevenue * STAGE4.subsidiaryShare), day: state.day });
   state.rivals = state.rivals.filter((x) => x.id !== rivalId);
+  addPress(state, `${state.brand.name} buys ${r.name}`);
   return { ok: true };
 }
 

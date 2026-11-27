@@ -293,7 +293,7 @@ describe('save v2', () => {
     expect(m.version).toBe(4);
     expect(m.cash).toBe(s.cash);
     expect(m.designs[0].vibe).toBe('gorpcore');
-    expect(m.candidates.length).toBe(4);
+    expect(m.candidates.length).toBe(5);
     expect(Object.keys(m.trends.values.color).length).toBeGreaterThan(5);
     runWeeks(m, 3);
     expect(m.day).toBe(s.day + 21);

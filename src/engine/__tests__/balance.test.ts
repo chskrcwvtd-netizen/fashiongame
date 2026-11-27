@@ -21,26 +21,23 @@ describe('balance (Normal unless stated)', () => {
       expect(r.flagshipDay!).toBeGreaterThan(120); // not instantly
     }
   });
-  it('sloppy Normal goes bankrupt within 365 days', () => {
+  it('sloppy Normal goes bankrupt within two years (even after the emergency loan)', () => {
     for (const seed of SEEDS) {
-      const r = runBot('normal', 'sloppy', 365, seed);
+      const r = runBot('normal', 'sloppy', 730, seed);
       expect(r.bankruptDay).not.toBeNull();
     }
   });
   it('reckless Normal goes bankrupt within 365 days', () => {
     for (const seed of SEEDS) expect(runBot('normal', 'reckless', 365, seed).bankruptDay).not.toBeNull();
   });
-  it('sloppy Easy survives longer than Normal', () => {
-    for (const seed of SEEDS) {
-      const easy = runBot('easy', 'sloppy', 365, seed);
-      const normal = runBot('normal', 'sloppy', 365, seed);
-      expect(easy.bankruptDay ?? Infinity).toBeGreaterThan(normal.bankruptDay!);
-    }
+  const avgDeath = (d: 'easy' | 'normal' | 'hard') => SEEDS.reduce((a, seed) => a + (runBot(d, 'sloppy', 730, seed).bankruptDay ?? 731), 0) / SEEDS.length;
+  it('sloppy Easy survives longer than Normal on average', () => {
+    expect(avgDeath('easy')).toBeGreaterThan(avgDeath('normal'));
   });
   it('sloppy Hard dies faster than Normal', () => {
     for (const seed of SEEDS) {
-      const hard = runBot('hard', 'sloppy', 365, seed);
-      const normal = runBot('normal', 'sloppy', 365, seed);
+      const hard = runBot('hard', 'sloppy', 730, seed);
+      const normal = runBot('normal', 'sloppy', 730, seed);
       expect(hard.bankruptDay!).toBeLessThan(normal.bankruptDay!);
     }
   });

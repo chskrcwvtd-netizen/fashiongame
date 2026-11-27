@@ -5,6 +5,7 @@ import { newId } from './newGame';
 import { randRange } from './rng';
 import { room } from './audience';
 import { cityLevel } from './world';
+import { addPress } from './extras';
 import type { ActionResult, GameEvent, GameState, ShowBudget } from './types';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -101,5 +102,6 @@ export function processShows(state: GameState, events: GameEvent[]): void {
     state.shows.history.push({ name: b.name, day: state.day, outcome });
     if (state.shows.history.length > 20) state.shows.history.shift();
     events.push({ type: 'showResult', name: b.name, outcome, text });
+    addPress(state, outcome === 'ovation' ? `${b.name}: ${state.brand.name} brings the house down` : outcome === 'good' ? `${b.name}: ${state.brand.name} delivers` : `${b.name}: critics pan ${state.brand.name}`);
   }
 }

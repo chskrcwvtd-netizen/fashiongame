@@ -38,6 +38,12 @@ export function refreshCandidates(state: GameState): void {
   const picked: RoleId[] = [];
   while (picked.length < 4) picked.push(roles.splice(randInt(state, 0, roles.length - 1), 1)[0]);
   state.candidates = picked.map((r) => makeCandidate(state, r));
+  // one cheap intern every week
+  const intern = makeCandidate(state, pick(state, ROLE_IDS.filter((r) => r !== 'director')));
+  intern.skill = randInt(state, 1, 3);
+  intern.trait = 'intern';
+  intern.salary = Math.round(marketRate(state, intern.role, intern.skill) * 0.4);
+  state.candidates.push(intern);
 }
 
 export function hire(state: GameState, candidateId: string): ActionResult {
@@ -130,10 +136,10 @@ function sum(state: GameState, role: RoleId): number {
 }
 
 export function designerQualityBonus(state: GameState): number {
-  return Math.round(best(state, 'designer') * 1.2);
+  return Math.round(best(state, 'designer') * 1.2 + best(state, 'director') * 0.4);
 }
 export function designerFitBonus(state: GameState): number {
-  return Math.min(0.12, sum(state, 'designer') * 0.01);
+  return Math.min(0.12, sum(state, 'designer') * 0.01) + Math.min(0.06, best(state, 'director') * 0.006);
 }
 export function sourcerCostMult(state: GameState): number {
   return 1 - Math.min(0.18, best(state, 'sourcer') * 0.018);
@@ -165,7 +171,7 @@ function recentDrops(state: GameState) {
 }
 
 export function moodTarget(state: GameState, e: Employee): number {
-  const pay = e.salary / Math.max(1, marketRate(state, e.role, e.skill)) - 1;
+  const pay = e.trait === 'intern' ? 0 : e.salary / Math.max(1, marketRate(state, e.role, e.skill)) - 1;
   let t = 62 + pay * 120 + best(state, 'manager') * 1.2;
   const drops = recentDrops(state);
   const soldOut = drops.some((d) => d.result!.outcome === 'soldout');
@@ -196,7 +202,7 @@ export function weeklyTeam(state: GameState, events: GameEvent[]): void {
   }
   for (const e of state.employees) {
     if (leaving.includes(e) || e.skill >= 10) continue;
-    e.xp = (e.xp ?? 0) + 1 + (e.mood > 70 ? 1 : 0);
+    e.xp = (e.xp ?? 0) + (1 + (e.mood > 70 ? 1 : 0)) * (e.trait === 'intern' ? 2 : 1);
     if (e.xp >= 6 + e.skill * 2) {
       e.skill += 1;
       e.xp = 0;

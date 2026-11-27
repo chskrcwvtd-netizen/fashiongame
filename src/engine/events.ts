@@ -1,3 +1,4 @@
+import { EXTRA_EVENTS } from './events2';
 import { room } from './audience';
 import { ARTISTS, DIFFICULTIES, FACTORIES, INFLUENCERS, STAGE2 } from './content';
 import { dateInfo } from './calendar';
@@ -914,6 +915,8 @@ export const EVENTS: EventDef[] = [
     ],
   },
 ];
+
+EVENTS.push(...EXTRA_EVENTS);
 
 export function eventDef(id: string): EventDef | undefined {
   return EVENTS.find((e) => e.id === id);

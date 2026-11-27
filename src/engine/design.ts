@@ -17,6 +17,8 @@ export function sanitizeDesignInput(input: DesignInput): DesignInput {
     finish: input.finish && FINISHES[input.finish] ? input.finish : 'print',
     back: input.back === 'logo' || input.back === 'text' ? input.back : 'none',
     backText: (input.backText || '').slice(0, 18),
+    collection: (input.collection || '').trim().slice(0, 24),
+    pixels: /^[01]{64}$/.test(input.pixels ?? '') ? input.pixels : '0'.repeat(64),
   };
 }
 
@@ -86,7 +88,10 @@ export function fairPrice(state: GameState, design: Pick<Design, 'garment'>, qua
 /** 0.2..2 — overall desirability ignoring price. */
 export function appeal(state: GameState, design: DesignInput, quality: number): number {
   const fit = marketFit(state, design);
-  return clamp((0.5 + quality / 100) * (0.4 + fit * 1.2) * (1 + collectionBonus(state, design)), 0.2, 2);
+  // pieces made this season feel fresh
+  const created = (design as Partial<Design>).createdDay;
+  const fresh = created !== undefined && Math.floor((created - 1) / 91) === Math.floor((state.day - 1) / 91) ? 0.05 : 0;
+  return clamp((0.5 + quality / 100) * (0.4 + fit * 1.2) * (1 + collectionBonus(state, design) + fresh), 0.2, 2);
 }
 
 /** Live pieces in the webshop that share this vibe (a "collection"). */
@@ -98,7 +103,13 @@ export function collectionSize(state: GameState, vibe: DesignInput['vibe']): num
 }
 
 export function collectionBonus(state: GameState, design: DesignInput): number {
+  if (design.collection && namedCollectionSize(state, design.collection) >= STAGE3.collectionMin) return 0.12;
   return collectionSize(state, design.vibe) >= STAGE3.collectionMin ? STAGE3.collectionBonus : 0;
+}
+
+/** Live pieces that share a collection name you gave them. */
+export function namedCollectionSize(state: GameState, name: string): number {
+  return Object.values(state.listings).filter((l) => l.active && (state.inventory[l.designId]?.units ?? 0) > 0 && getDesign(state, l.designId)?.collection === name).length;
 }
 
 /**

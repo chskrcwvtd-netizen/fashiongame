@@ -1,4 +1,4 @@
-import { RIVALS } from './content';
+import { ALL_RIVALS, RIVALS } from './content';
 import { chance, pick, randRange } from './rng';
 import { room } from './audience';
 import { categoryIds, trendPop, displayName } from './trends';
@@ -7,7 +7,7 @@ import type { GameEvent, GameState, Rival, TrendCategory } from './types';
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** Audience ceiling per rival (their growth slows toward it). */
-const RIVAL_CAP: Record<string, number> = { krush: 80000, velour: 900000, hexpark: 120000, moss: 200000, pylon: 700000, faithful: 1600000 };
+const RIVAL_CAP: Record<string, number> = { krush: 80000, velour: 900000, hexpark: 120000, moss: 200000, pylon: 700000, faithful: 1600000, nightbus: 300000, ferro: 500000, loopcult: 250000, greybox: 200000 };
 
 export function initRivals(): Rival[] {
   return RIVALS.map((d) => ({
@@ -89,7 +89,7 @@ export function weeklyRivals(state: GameState, events: GameEvent[]): void {
 
     const vibeHeat = trendPop(state, 'vibe', r.vibe);
     const focusHeat = r.focus ? trendPop(state, r.focus.cat, r.focus.id) : 0.5;
-    const def = RIVALS.find((d) => d.id === r.id)!;
+    const def = ALL_RIVALS.find((d) => d.id === r.id)!;
     const room = Math.max(0.03, 1 - r.followers / (RIVAL_CAP[r.id] ?? 100000));
     const g = def.growth * (0.6 + vibeHeat * 0.5 + focusHeat * 0.3) * (0.7 + r.hype / 120) * room + randRange(state, -0.004, 0.004);
     r.followers = Math.max(100, Math.round(r.followers * (1 + g)));

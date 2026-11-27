@@ -1,6 +1,7 @@
 import { CITIES, DIFFICULTIES, STAGE4, type CityDef } from './content';
 import type { ActionResult, DesignInput, GameState, CityId } from './types';
 import { audienceCap } from './audience';
+import { addPress } from './extras';
 
 export function cityLevel(state: GameState, id: CityId): 0 | 1 | 2 {
   return state.cities[id] ?? 0;
@@ -36,6 +37,7 @@ export function expandCity(state: GameState, id: CityId): ActionResult {
   state.cash -= cost;
   state.stats.spent += cost;
   state.cities[id] = (cityLevel(state, id) + 1) as 1 | 2;
+  addPress(state, cityLevel(state, id) === 2 ? `${state.brand.name} opens a store in ${c.name}` : `${state.brand.name} lands in ${c.name}`);
   state.hype = Math.min(100, state.hype + 6);
   return { ok: true };
 }

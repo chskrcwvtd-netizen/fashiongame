@@ -4,6 +4,7 @@ import { initTrends } from './trends';
 import { refreshCandidates } from './team';
 import { initRivals } from './rivals';
 import { corporateDefaults } from './corporate';
+import { CHALLENGES } from './extras';
 import type { DifficultyId, GameState, LogoChoice } from './types';
 
 export interface NewGameOptions {
@@ -11,6 +12,8 @@ export interface NewGameOptions {
   logo: LogoChoice;
   difficulty: DifficultyId;
   seed?: number;
+  /** 'campaign' (default), 'sandbox', or a challenge id */
+  mode?: string;
 }
 
 export function validateBrandName(name: string): string | null {
@@ -66,6 +69,16 @@ export function createNewGame(opts: NewGameOptions): GameState {
   };
   state.trends = initTrends(state);
   refreshCandidates(state);
+  if (opts.mode === 'sandbox') {
+    state.flags.sandbox = true;
+    state.cash = 1_000_000_000;
+  } else if (opts.mode && opts.mode !== 'campaign') {
+    const ch = CHALLENGES.find((c) => c.id === opts.mode);
+    if (ch) {
+      ch.setup(state);
+      state.challenge = { id: ch.id, done: null };
+    }
+  }
   return state;
 }
 

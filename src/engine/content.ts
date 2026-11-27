@@ -44,6 +44,8 @@ export const GARMENTS: Record<GarmentId, GarmentDef> = {
   bag: { id: 'bag', name: 'Bag', refPrice: 110, baseCost: 20, demand: 0.55, seasonal: [1.0, 1.0, 1.0, 1.0], taste: 0.55 },
   jewelry: { id: 'jewelry', name: 'Chain', refPrice: 120, baseCost: 15, demand: 0.5, seasonal: [1.0, 1.0, 1.0, 1.1], taste: 0.6 },
   perfume: { id: 'perfume', name: 'Perfume', refPrice: 85, baseCost: 8, demand: 0.7, seasonal: [0.9, 0.9, 1.1, 1.4], taste: 0.6 },
+  jeans: { id: 'jeans', name: 'Jeans', refPrice: 80, baseCost: 15, demand: 0.85, seasonal: [1.05, 0.9, 1.1, 0.95], taste: 0.65 },
+  shorts: { id: 'shorts', name: 'Shorts', refPrice: 45, baseCost: 8, demand: 0.9, seasonal: [1.1, 1.6, 0.6, 0.3], taste: 0.55 },
 };
 /** Pieces that must be unlocked first (milestone or product-line investment). */
 export const LOCKED_GARMENTS: Partial<Record<GarmentId, string>> = { track: 'unlock_track', sneakers: 'line_sneakers', bag: 'line_bag', jewelry: 'line_jewelry', perfume: 'line_perfume' };
@@ -86,7 +88,7 @@ export const PATTERNS: Record<PatternId, { id: PatternId; name: string; taste: n
 };
 export const PATTERN_IDS = Object.keys(PATTERNS) as PatternId[];
 
-export const GRAPHIC_TASTE: Record<GraphicKind, number> = { none: 0.45, text: 0.6, emblem: 0.65 };
+export const GRAPHIC_TASTE: Record<GraphicKind, number> = { none: 0.45, text: 0.6, emblem: 0.65, pixel: 0.62 };
 
 export const EMBLEMS: Record<string, { id: string; name: string; taste: number }> = {
   star: { id: 'star', name: 'Star', taste: 0.65 },
@@ -153,8 +155,13 @@ export const FACTORIES: Record<FactoryId, FactoryDef> = {
     costMult: 1.75, qualityMod: 12, leadDays: 5, minOrder: 40,
     defectChance: 0.01, delayChance: 0.03, scandalChance: 0,
   },
+  own: {
+    id: 'own', name: 'Your Own Factory', tagline: 'Yours. Good, cheap, never late.',
+    costMult: 0.85, qualityMod: 8, leadDays: 5, minOrder: 20,
+    defectChance: 0, delayChance: 0, scandalChance: 0,
+  },
 };
-export const LOCKED_FACTORIES: Partial<Record<FactoryId, string>> = { vela: 'unlock_vela' };
+export const LOCKED_FACTORIES: Partial<Record<FactoryId, string>> = { vela: 'unlock_vela', own: 'own_factory' };
 export const FACTORY_IDS = Object.keys(FACTORIES) as FactoryId[];
 
 export interface HqLevelDef {
@@ -250,6 +257,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
   sourcer: { id: 'sourcer', name: 'Sourcer', does: 'Cheaper production and fewer defects.', baseSalary: 380 },
   manager: { id: 'manager', name: 'Manager', does: 'Keeps the team happy and trims the weekly bills.', baseSalary: 500 },
   analyst: { id: 'analyst', name: 'Trend Analyst', does: 'Shows where trends are heading, weeks ahead.', baseSalary: 420 },
+  director: { id: 'director', name: 'Creative Director', does: 'Gives the whole brand a signature: better fit and quality on everything.', baseSalary: 650 },
 };
 export const ROLE_IDS = Object.keys(ROLES) as RoleId[];
 
@@ -259,6 +267,7 @@ export const TRAITS: Record<TraitId, { id: TraitId; name: string; blurb: string 
   loyal: { id: 'loyal', name: 'Loyal', blurb: 'Mood never drops below 30.' },
   diva: { id: 'diva', name: 'Diva', blurb: 'Works 25% better, always a little unhappy.' },
   chill: { id: 'chill', name: 'Chill', blurb: 'Easy to keep happy.' },
+  intern: { id: 'intern', name: 'Intern', blurb: 'Cheap, green, learns twice as fast.' },
 };
 export const TRAIT_IDS = Object.keys(TRAITS) as TraitId[];
 
@@ -419,6 +428,10 @@ export const CITIES: CityDef[] = [
   { id: 'tokyo', name: 'Tokyo', x: 868, y: 192, vibes: ['techwear', 'cyber'], blurb: 'Obsessive collectors, endless detail.', shipCost: 70000, shipWeekly: 1600, storeCost: 625000, storeRent: 10000, capShip: 120000, capStore: 240000 },
   { id: 'la', name: 'Los Angeles', x: 172, y: 200, vibes: ['skate', 'gorpcore'], blurb: 'Skate parks and influencer mansions.', shipCost: 60000, shipWeekly: 1400, storeCost: 500000, storeRent: 9000, capShip: 130000, capStore: 260000 },
   { id: 'seoul', name: 'Seoul', x: 836, y: 184, vibes: ['y2k', 'techwear'], blurb: 'Trends move at light speed.', shipCost: 56000, shipWeekly: 1300, storeCost: 475000, storeRent: 8400, capShip: 90000, capStore: 180000 },
+  { id: 'berlin', name: 'Berlin', x: 510, y: 124, vibes: ['techwear', 'grunge'], blurb: 'Techno basements and black on black.', shipCost: 50000, shipWeekly: 1200, storeCost: 450000, storeRent: 8000, capShip: 70000, capStore: 140000 },
+  { id: 'milan', name: 'Milan', x: 506, y: 160, vibes: ['luxury', 'retro'], blurb: 'Heritage houses and sharp tailoring.', shipCost: 60000, shipWeekly: 1400, storeCost: 550000, storeRent: 9000, capShip: 60000, capStore: 130000 },
+  { id: 'lagos', name: 'Lagos', x: 500, y: 300, vibes: ['y2k', 'skate'], blurb: 'Loud colour, fast culture, huge crowd.', shipCost: 40000, shipWeekly: 1000, storeCost: 380000, storeRent: 7000, capShip: 110000, capStore: 220000 },
+  { id: 'saopaulo', name: 'São Paulo', x: 320, y: 370, vibes: ['skate', 'cyber'], blurb: 'Street art capital of the south.', shipCost: 45000, shipWeekly: 1100, storeCost: 420000, storeRent: 7500, capShip: 120000, capStore: 230000 },
 ];
 export const BUDAPEST = { x: 528, y: 150 };
 
@@ -459,3 +472,21 @@ export const SHOW_BUDGETS: Record<ShowBudget, { name: string; cost: number; mult
   medium: { name: 'Proper', cost: 40000, mult: 1.0 },
   big: { name: 'Spectacle', cost: 100000, mult: 1.25 },
 };
+
+// ---------------------------------------------------------------- 50-question update
+
+/** Rivals that appear later in the game (one a year from year 2). */
+export const EXTRA_RIVALS: RivalDef[] = [
+  { id: 'nightbus', name: 'Night Bus Club', personality: 'hype', vibe: 'y2k', color: '#9fd3ff', glyph: 'star', followers: 8000, weeklyRevenue: 9000, growth: 0.03, bio: 'Three teenagers and a print shop. Growing scary fast.' },
+  { id: 'ferro', name: 'Ferro Atelier', personality: 'snob', vibe: 'luxury', color: '#c9b48a', glyph: 'wings', followers: 40000, weeklyRevenue: 80000, growth: 0.015, bio: 'A Milan house trying to look young.' },
+  { id: 'loopcult', name: 'LOOPCULT', personality: 'chaos', vibe: 'cyber', color: '#7b3fe4', glyph: 'alien', followers: 15000, weeklyRevenue: 15000, growth: 0.028, bio: 'Born on Loopz, lives on Loopz.' },
+  { id: 'greybox', name: 'Greybox Supply', personality: 'copycat', vibe: 'techwear', color: '#4a5059', glyph: 'bolt', followers: 20000, weeklyRevenue: 30000, growth: 0.02, bio: 'Factory-direct copies of whatever is hot.' },
+];
+export const ALL_RIVALS: RivalDef[] = [...RIVALS, ...EXTRA_RIVALS];
+
+export const MAGAZINES = ['Hype Daily', 'Thread Count', 'Concrete Mag', 'Budapest Fits', 'Glint Weekly'];
+
+export const OWN_FACTORY = { cost: 750000, weekly: 5000 };
+export const LOAN_SIZES = [10000, 50000, 250000, 1000000];
+export const LOAN_WEEKS = 26;
+export const LOAN_INTEREST = 0.25;

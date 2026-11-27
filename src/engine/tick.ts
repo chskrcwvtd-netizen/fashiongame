@@ -17,6 +17,7 @@ import { availableUnits } from './webshop';
 import { STAGE3 } from './content';
 import { weeklyCorporate } from './corporate';
 import { processShows } from './shows';
+import { checkChallenge, holiday, yearlyShakeUp } from './extras';
 import type { GameEvent, GameState } from './types';
 
 /** Advance the simulation by one in-game day. Returns what happened. */
@@ -45,6 +46,9 @@ export function advanceDay(state: GameState): GameEvent[] {
     weeklyRivals(state, events);
     weeklyWholesale(state, events);
     weeklyCorporate(state, events);
+    yearlyShakeUp(state, events);
+    const hol = holiday(state);
+    if (hol) events.push({ type: 'news', text: `${hol.name}: shoppers are out in force this week.` });
   }
   processShows(state, events);
   processReceivables(state, events);
@@ -58,6 +62,7 @@ export function advanceDay(state: GameState): GameEvent[] {
     processScheduledEvents(state, events);
     maybeTriggerEvent(state, events);
     checkMilestones(state, events, newWeek);
+    checkChallenge(state, events);
     if (newWeek) weeklyCampaign(state, events);
   }
 
@@ -84,6 +89,7 @@ function autoRestock(state: GameState, events: GameEvent[]) {
 function weeklyCampaign(state: GameState, events: GameEvent[]) {
   const rank = playerRank(state);
   const h = state.history;
+  if (state.flags.sandbox) state.campaign.endSeen = state.campaign.winSeen = true;
   h.followers.push(state.followers);
   h.value.push(brandValue(state));
   h.rank.push(rank);

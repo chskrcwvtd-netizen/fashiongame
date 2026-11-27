@@ -1,11 +1,11 @@
 export type DifficultyId = 'easy' | 'normal' | 'hard';
-export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie' | 'track' | 'sneakers' | 'bag' | 'jewelry' | 'perfume';
-export type CityId = 'london' | 'paris' | 'tokyo' | 'la' | 'seoul';
+export type GarmentId = 'tee' | 'hoodie' | 'cargo' | 'puffer' | 'cap' | 'beanie' | 'track' | 'sneakers' | 'bag' | 'jewelry' | 'perfume' | 'jeans' | 'shorts';
+export type CityId = 'london' | 'paris' | 'tokyo' | 'la' | 'seoul' | 'berlin' | 'milan' | 'lagos' | 'saopaulo';
 export type ShowBudget = 'small' | 'medium' | 'big';
 export type MaterialId = 'basic' | 'standard' | 'premium' | 'luxe';
-export type FactoryId = 'fastloop' | 'danube' | 'nord' | 'vela';
+export type FactoryId = 'fastloop' | 'danube' | 'nord' | 'vela' | 'own';
 export type PatternId = 'solid' | 'camo' | 'tiedye' | 'checker' | 'stripes' | 'flames' | 'grid' | 'gradient';
-export type GraphicKind = 'none' | 'text' | 'emblem';
+export type GraphicKind = 'none' | 'text' | 'emblem' | 'pixel';
 export type FontId = 'gothic' | 'bubble' | 'chrome' | 'graffiti';
 export type ColorId = string;
 export type EmblemId = string;
@@ -13,8 +13,8 @@ export type Season = 'Spring' | 'Summer' | 'Fall' | 'Winter';
 export type Speed = 0 | 1 | 2 | 4;
 export type VibeId = 'y2k' | 'gorpcore' | 'techwear' | 'grunge' | 'skate' | 'luxury' | 'cyber' | 'retro';
 export type TrendCategory = 'color' | 'pattern' | 'garment' | 'vibe';
-export type RoleId = 'designer' | 'marketer' | 'sourcer' | 'manager' | 'analyst';
-export type TraitId = 'perfectionist' | 'hypebeast' | 'loyal' | 'diva' | 'chill';
+export type RoleId = 'designer' | 'marketer' | 'sourcer' | 'manager' | 'analyst' | 'director';
+export type TraitId = 'perfectionist' | 'hypebeast' | 'loyal' | 'diva' | 'chill' | 'intern';
 export type PlatformId = 'loopz' | 'glint';
 export type PostKind = 'fit' | 'bts' | 'meme' | 'teaser';
 
@@ -45,6 +45,10 @@ export interface DesignInput {
   finish: FinishId;
   back: BackPrint;
   backText: string;
+  /** optional named collection (3+ live pieces with the same name get a bonus) */
+  collection?: string;
+  /** 8x8 pixel graphic, 64 chars of '0'/'1' */
+  pixels?: string;
 }
 
 export interface Design extends DesignInput {
@@ -92,6 +96,9 @@ export interface DropResult {
   demand: number;
   minutes: number | null;
   resalePrice: number | null;
+  raffle?: boolean;
+  bots?: number;
+  numbered?: boolean;
 }
 
 export interface Drop {
@@ -106,6 +113,12 @@ export interface Drop {
   postponements: number;
   restock?: boolean;
   clash?: boolean;
+  numbered?: boolean;
+  preorder?: boolean;
+  raffle?: boolean;
+  botShield?: boolean;
+  /** pre-order money already received */
+  deposit?: number;
   result: DropResult | null;
 }
 
@@ -227,6 +240,20 @@ export interface GameState {
   cities: Partial<Record<CityId, 1 | 2>>;
   corporate: Corporate;
   shows: { applied: ShowBooking[]; lastRunwayDay: number; history: { name: string; day: number; outcome: 'ovation' | 'good' | 'panned' }[] };
+  // ---- 50-question update (optional so older saves load untouched) ----
+  loans?: Loan[];
+  press?: { day: number; mag: string; headline: string }[];
+  challenge?: { id: string; done: 'won' | 'lost' | null } | null;
+  rivalCollab?: string | null;
+  sustainability?: boolean;
+}
+
+export interface Loan {
+  id: string;
+  principal: number;
+  weekly: number;
+  weeksLeft: number;
+  emergency?: boolean;
 }
 
 export interface ShowBooking {
@@ -324,4 +351,7 @@ export type GameEvent =
   | { type: 'earnings'; beat: boolean; price: number }
   | { type: 'investorTarget'; met: boolean; round: string }
   | { type: 'showResult'; name: string; outcome: 'ovation' | 'good' | 'panned'; text: string }
-  | { type: 'subsidiaryIncome'; amount: number };
+  | { type: 'subsidiaryIncome'; amount: number }
+  | { type: 'bailout'; amount: number }
+  | { type: 'challengeResult'; won: boolean; title: string; text: string }
+  | { type: 'news'; text: string };

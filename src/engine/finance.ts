@@ -1,7 +1,8 @@
-import { DIFFICULTIES, ECON, HQ_LEVELS } from './content';
+import { DIFFICULTIES, ECON, HQ_LEVELS, OWN_FACTORY } from './content';
 import { stockUnits } from './production';
 import { managerBillMult, weeklySalaries } from './team';
 import { marketsWeekly } from './world';
+import { loanPayments, processLoans, sustainabilityCost, tryBailout } from './extras';
 import type { GameEvent, GameState } from './types';
 
 export function weeklyBillEstimate(state: GameState) {
@@ -12,7 +13,9 @@ export function weeklyBillEstimate(state: GameState) {
   const storage = stockUnits(state) * ECON.storagePerUnitWeekly * mult;
   const salaries = weeklySalaries(state);
   const markets = marketsWeekly(state) * mgr;
-  return { rent, platform, storage, salaries, markets, total: rent + platform + storage + salaries + markets };
+  const loans = loanPayments(state);
+  const extras = (state.unlocks.includes('own_factory') ? OWN_FACTORY.weekly * mult : 0) + (state.sustainability ? sustainabilityCost(state) : 0);
+  return { rent, platform, storage, salaries, markets, loans, extras, total: rent + platform + storage + salaries + markets + loans + extras };
 }
 
 export function chargeWeeklyBills(state: GameState, events: GameEvent[]): void {
@@ -22,11 +25,14 @@ export function chargeWeeklyBills(state: GameState, events: GameEvent[]): void {
   state.stats.weeklyRevenue.push(Math.round(state.stats.revenueThisWeek));
   if (state.stats.weeklyRevenue.length > 26) state.stats.weeklyRevenue.shift();
   state.stats.revenueThisWeek = 0;
+  processLoans(state);
+  if (state.sustainability) state.reputation = Math.min(100, state.reputation + 0.3);
   events.push({ type: 'bills', total: b.total, rent: b.rent, platform: b.platform, storage: b.storage, salaries: b.salaries, markets: b.markets });
 }
 
 export function updateSolvency(state: GameState, events: GameEvent[]): void {
   const grace = DIFFICULTIES[state.difficulty].graceDays;
+  if (state.flags.sandbox) return;
   if (state.cash < 0 && state.overdrawnSince === null) {
     state.overdrawnSince = state.day;
     events.push({ type: 'overdrawn', graceDays: grace });
@@ -35,6 +41,7 @@ export function updateSolvency(state: GameState, events: GameEvent[]): void {
     events.push({ type: 'recovered' });
   }
   if (state.overdrawnSince !== null && state.day - state.overdrawnSince >= grace) {
+    if (tryBailout(state, events)) return;
     state.gameOver = { reason: 'bankrupt', day: state.day };
     events.push({ type: 'bankrupt' });
   }
