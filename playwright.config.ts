@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: [['list']],
   use: { viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 },
   projects: [
-    { name: 'browser', testMatch: /playthrough|sound/, use: { baseURL: 'http://localhost:4173' } },
+    { name: 'browser', testMatch: /playthrough|sound|handtohand/, use: { baseURL: 'http://localhost:4173' } },
     { name: 'desktop', testMatch: /electron/ },
     { name: 'iphone', testMatch: /iphone/, use: { ...devices['iPhone 15'], browserName: 'chromium', baseURL: 'http://localhost:4173', actionTimeout: 8_000 } },
     { name: 'iphone-webkit', testMatch: /iphone/, use: { ...devices['iPhone 15'], browserName: 'webkit', baseURL: 'http://localhost:4173', actionTimeout: 8_000 } },

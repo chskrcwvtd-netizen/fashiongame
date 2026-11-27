@@ -1,4 +1,5 @@
-import { currentEvent, eventDef, eventOptions } from '../../engine';
+import { currentEvent, eventDef, eventOptions, getDesign } from '../../engine';
+import { WornPhoto } from '../components/WornPhoto';
 import { useGame } from '../hooks';
 
 export function EventModal() {
@@ -33,6 +34,9 @@ export function EventModal() {
         <h2 className="event-title" id="event-title">
           {def.title(s, pe!.params)}
         </h2>
+        {pe!.defId === 'hand_to_hand' && s.lifePaths?.[0] && getDesign(s, s.lifePaths[0].designId) && (
+          <WornPhoto design={getDesign(s, s.lifePaths[0].designId)!} logo={s.brand.logo} lp={s.lifePaths[0]} width={220} />
+        )}
         <p className="event-body">{def.body(s, pe!.params)}</p>
         <div className="event-options">
           {opts.map((o, i) => (

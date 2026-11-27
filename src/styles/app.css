@@ -2876,6 +2876,24 @@ html {
     font-size: 13px;
     padding: 5px 8px;
   }
+  /* collapsed strip: the newest line only, one row high, so the game keeps its room */
+  .feed:not(.open) .feed-item span:last-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .feed:not(.open) {
+    max-height: 22dvh;
+  }
+  /* touch targets: at least 44 x 44 on phones */
+  .stage button,
+  .modal button,
+  .topbar button,
+  .rail-btn,
+  .feed-title {
+    min-height: 44px;
+    min-width: 44px;
+  }
   .coach {
     margin-bottom: 6px;
     padding: 8px 12px;
@@ -3214,5 +3232,59 @@ html {
   }
   .rail-btn {
     padding: 4px 6px 2px;
+  }
+}
+
+/* ---- hand to hand: the wearer photo ------------------------------------------ */
+.worn-photo {
+  margin: 0 auto 12px;
+  padding: 10px 10px 6px;
+  background: #f1ece1;
+  border-radius: 3px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+  transform: rotate(-1.5deg);
+  max-width: 100%;
+}
+.worn-photo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.worn-caption {
+  font-family: 'Permanent Marker', cursive;
+  color: #1b1a20;
+  font-size: 14px;
+  text-align: center;
+  padding-top: 6px;
+}
+.wild {
+  margin-bottom: 18px;
+}
+.wild-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-start;
+}
+.wild-table {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  max-width: 200px;
+}
+.wild-table svg {
+  max-width: 100%;
+  height: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .worn-photo {
+    transform: none;
+  }
+}
+@media (max-height: 520px) {
+  .modal .worn-photo {
+    width: 150px !important;
   }
 }

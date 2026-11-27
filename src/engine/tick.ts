@@ -17,6 +17,7 @@ import { availableUnits } from './webshop';
 import { STAGE3 } from './content';
 import { weeklyCorporate } from './corporate';
 import { processShows } from './shows';
+import { processLifePaths } from './lifepath';
 import { checkChallenge, holiday, processRivalCollabOffers, yearlyShakeUp } from './extras';
 import type { GameEvent, GameState } from './types';
 
@@ -54,6 +55,7 @@ export function advanceDay(state: GameState): GameEvent[] {
   processReceivables(state, events);
   autoRestock(state, events);
   processProduction(state, events);
+  processLifePaths(state, events);
   processDrops(state, events);
   simulateWebshopDay(state, events);
   if (newWeek) chargeWeeklyBills(state, events);

@@ -25,3 +25,4 @@ export * from './world';
 export * from './corporate';
 export * from './shows';
 export * from './extras';
+export * from './lifepath';

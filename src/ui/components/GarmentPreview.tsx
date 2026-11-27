@@ -20,6 +20,9 @@ interface Shape {
   frontOnlyTrim?: number[];
 }
 
+const CUT_TEE = 'M95 40 L125 30 Q150 52 175 30 L205 40 Q196 74 212 108 L212 292 L88 292 L88 108 Q104 74 95 40 Z';
+const CUT_EDGES = ['M95 40 Q104 74 88 108', 'M205 40 Q196 74 212 108'];
+
 const SHAPES: Record<DesignInput['garment'], Shape> = {
   tee: {
     body: ['M95 40 L125 30 Q150 52 175 30 L205 40 L262 82 L238 122 L212 108 L212 292 L88 292 L88 108 L62 122 L38 82 Z'],
@@ -178,7 +181,10 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
   const back = side === 'back';
   const finish = design.finish ?? 'print';
   const uid = useId().replace(/:/g, '');
-  const shape = SHAPES[design.garment];
+  const base = SHAPES[design.garment];
+  // hand to hand: a wearer cut the sleeves off a tee (raw armholes, no sleeve trim)
+  const cut = !!design.cut && design.garment === 'tee';
+  const shape: Shape = cut ? { ...base, body: [CUT_TEE], trim: base.trim.slice(0, 1) } : base;
   const p = hex(design.primary);
   const sc = hex(design.secondary);
   const same = design.primary === design.secondary;
@@ -378,9 +384,15 @@ export function GarmentPreview({ design, logo, size = 300, className, title, sid
         <path key={`t${i}`} d={d} fill={same ? shade(p, -0.15) : sc} stroke="#06050a" strokeOpacity=".5" strokeWidth="1.5" />
       ))}
       {graphic}
+      {back && design.credit && (
+        <text x="150" y="268" textAnchor="middle" fontFamily="'Permanent Marker', cursive" fontSize="15" fill={ink} opacity=".9" data-testid="garment-credit">
+          {design.credit}
+        </text>
+      )}
       {shape.body.map((d, i) => (
         <path key={`o${i}`} d={d} fill="none" stroke="#06050a" strokeOpacity=".75" strokeWidth="2.5" strokeLinejoin="round" />
       ))}
+      {cut && CUT_EDGES.map((d, i) => <path key={`c${i}`} d={d} fill="none" stroke={shade(p, 0.35)} strokeWidth="4" strokeDasharray="2 3" strokeLinecap="round" />)}
     </svg>
   );
 }

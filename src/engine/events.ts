@@ -1,4 +1,5 @@
 import { EXTRA_EVENTS } from './events2';
+import { HAND_TO_HAND_EVENT } from './lifepath';
 import { room } from './audience';
 import { ARTISTS, DIFFICULTIES, FACTORIES, INFLUENCERS, STAGE2 } from './content';
 import { dateInfo } from './calendar';
@@ -923,6 +924,8 @@ export const EVENTS: EventDef[] = [
 EVENTS.push(...EXTRA_EVENTS);
 
 export function eventDef(id: string): EventDef | undefined {
+  // looked up at call time: lifepath.ts and this file import each other
+  if (id === 'hand_to_hand') return HAND_TO_HAND_EVENT;
   return EVENTS.find((e) => e.id === id);
 }
 

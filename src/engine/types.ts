@@ -49,6 +49,9 @@ export interface DesignInput {
   collection?: string;
   /** 8x8 pixel graphic, 64 chars of '0'/'1' */
   pixels?: string;
+  /** hand to hand: a wearer's change (sleeves cut off) and their name credited on the back */
+  cut?: boolean;
+  credit?: string;
 }
 
 export interface Design extends DesignInput {
@@ -258,6 +261,20 @@ export interface GameState {
   rivalOffer?: { rivalId: string; expiresDay: number };
   lastRivalOfferDay?: number;
   sustainability?: boolean;
+  /** hand to hand: the one sold tee followed into the city (absent in older saves = empty) */
+  lifePaths?: LifePath[];
+}
+
+export interface LifePath {
+  dropId: string;
+  designId: string;
+  price: number;
+  wearer: 'mira' | 'bence';
+  soldDay: number;
+  dueDay: number;
+  status: 'out' | 'spotted' | 'accepted' | 'declined' | 'delivered';
+  variantId?: string;
+  delivered?: number;
 }
 
 export interface Loan {

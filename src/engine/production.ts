@@ -26,6 +26,8 @@ export interface OrderInput {
   designId: string;
   factoryId: FactoryId;
   quantity: number;
+  /** a small custom run (hand to hand club order) skips the factory minimum */
+  smallRun?: boolean;
 }
 
 export function orderCost(state: GameState, input: OrderInput): number {
@@ -42,7 +44,7 @@ export function placeOrder(state: GameState, input: OrderInput): ActionResult {
   if (!f) return { ok: false, reason: 'Unknown factory.' };
   const q = input.quantity;
   if (!Number.isInteger(q) || q <= 0) return { ok: false, reason: 'Quantity must be a whole number.' };
-  if (q < f.minOrder) return { ok: false, reason: `${f.name} needs at least ${f.minOrder} units.` };
+  if (!input.smallRun && q < f.minOrder) return { ok: false, reason: `${f.name} needs at least ${f.minOrder} units.` };
   if (q > freeCapacity(state)) return { ok: false, reason: `Not enough warehouse space (${freeCapacity(state)} free).` };
   const cost = orderCost(state, input);
   if (cost > state.cash) return { ok: false, reason: 'Not enough cash.' };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { GARMENTS, type Design } from '../../engine';
+import { GARMENTS, WEARERS, getDesign, type Design } from '../../engine';
+import { WornPhoto } from '../components/WornPhoto';
 import { GarmentPreview } from '../components/GarmentPreview';
 import { useGame } from '../hooks';
 import { canSaveFiles, exportImage } from '../exportImage';
@@ -19,9 +20,43 @@ export function Lookbook() {
   const { s } = useGame();
   const [pick, setPick] = useState<string | null>(null);
   const designs = [...s.designs].reverse();
+  const lp = s.lifePaths?.[0];
+  const own = lp ? getDesign(s, lp.designId) : undefined;
+  const variant = lp?.variantId ? getDesign(s, lp.variantId) : undefined;
+  const w = lp ? WEARERS[lp.wearer] : null;
   return (
     <div className="panel lookbook" data-testid="panel-lookbook">
       <h2 className="display">lookbook</h2>
+      {lp && own && w && (
+        <section className="wild" data-testid="lookbook-wild">
+          <h3>Out in the city</h3>
+          {lp.status === 'out' ? (
+            <p className="muted">One {own.name} went home with a buyer in your drop. Somebody in Budapest is wearing it now.</p>
+          ) : (
+            <>
+              <div className="wild-pair">
+                <figure className="wild-table">
+                  <GarmentPreview design={own} logo={s.brand.logo} size={200} side="back" />
+                  <figcaption className="muted small">On your design table: {own.name}, back</figcaption>
+                </figure>
+                <WornPhoto design={own} logo={s.brand.logo} lp={lp} width={200} />
+                {variant && (
+                  <figure className="wild-table">
+                    <GarmentPreview design={variant} logo={s.brand.logo} size={200} side="back" />
+                    <figcaption className="muted small">The club run: {variant.name}</figcaption>
+                  </figure>
+                )}
+              </div>
+              <p className="small" data-testid="wild-status">
+                {lp.status === 'spotted' && `${w.club} is waiting for your answer.`}
+                {lp.status === 'declined' && `You kept your planned run. ${w.name} still wears the only cut one.`}
+                {lp.status === 'accepted' && `${w.club}'s 8 cut tees are being made, ${w.name}'s name on the back.`}
+                {lp.status === 'delivered' && `${w.club} got ${lp.delivered} cut tees with ${w.name}'s name on the back.`}
+              </p>
+            </>
+          )}
+        </section>
+      )}
       {designs.length === 0 ? (
         <p className="muted">Design something first. Every piece gets its own studio shot here.</p>
       ) : (

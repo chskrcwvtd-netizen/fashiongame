@@ -8,6 +8,7 @@ import { localBonus } from './world';
 import { addPress, holidayMult } from './extras';
 import { engagedFollowers } from './audience';
 import type { ActionResult, Drop, DropItem, DropResult, GameEvent, GameState } from './types';
+import { startLifePath } from './lifepath';
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -167,6 +168,7 @@ function resolveDrop(state: GameState, drop: Drop, events: GameEvent[]) {
     const demand = Math.max(0, Math.round(expected * randRange(state, 0.75, 1.25)));
     return { designId: item.designId, units: item.units, price: item.price, demand, sold: Math.min(item.units, demand) };
   });
+  startLifePath(state, drop.id, sales, events);
   const demand = sales.reduce((sum, item) => sum + item.demand, 0);
   const sold = sales.reduce((sum, item) => sum + item.sold, 0);
   const ratio = demand / drop.units;
