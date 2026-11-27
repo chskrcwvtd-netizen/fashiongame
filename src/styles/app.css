@@ -2688,3 +2688,312 @@ table.mini td:not(:first-child) {
   padding: 5px 4px 4px;
   gap: 2px;
 }
+
+/* ---- phone / iPhone layout --------------------------------------------------
+   Only applies to small screens. The desktop window is never this small
+   (minimum 1280 x 720), so the Windows version looks exactly the same. */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+@media (max-width: 900px), (max-height: 520px) {
+  html,
+  body {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px !important; /* below 16px Safari zooms in on every tap */
+  }
+  .game {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* top bar: two compact rows */
+  .topbar {
+    order: 1;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding: calc(6px + env(safe-area-inset-top)) 10px 6px;
+    flex-shrink: 0;
+  }
+  .brandmark-name {
+    display: none;
+  }
+  .cash {
+    font-size: 24px;
+    min-width: 0;
+  }
+  .clock {
+    min-width: 0;
+    font-size: 13px;
+  }
+  .clock-day {
+    font-size: 12px;
+  }
+  .menu-btn {
+    margin-left: auto;
+    width: 40px;
+    height: 40px;
+  }
+  .overdrawn {
+    order: 9;
+    flex-basis: 100%;
+    text-align: center;
+    padding: 4px 10px;
+    font-size: 13px;
+  }
+  .speed {
+    order: 10;
+  }
+  .speed-btn {
+    padding: 6px 8px;
+    min-width: 38px;
+  }
+  .topbar .stats {
+    order: 11;
+    gap: 10px;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .stat-num {
+    font-size: 15px;
+  }
+  .stat-label {
+    font-size: 10px;
+  }
+  .meter {
+    grid-template-columns: auto 34px;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .meter-num {
+    display: none;
+  }
+  /* the screen itself */
+  .stage {
+    order: 2;
+    flex: 1;
+    min-height: 0;
+    padding: 12px 12px 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .help-wrap {
+    top: 10px;
+    right: 10px;
+  }
+  .help-pop {
+    width: min(320px, 86vw);
+  }
+  /* live feed: a strip above the menu, tap "Live feed" to open it */
+  .feed {
+    order: 3;
+    flex-shrink: 0;
+    border-left: none;
+    border-top: 1px solid var(--edge);
+    padding: 8px 12px;
+    max-height: 30dvh;
+    background: rgba(8, 6, 15, 0.96);
+  }
+  .feed.open {
+    max-height: 60dvh;
+  }
+  .feed-title {
+    margin: 0 0 6px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+  }
+  .feed-title::after {
+    content: '▲ more';
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .feed.open .feed-title::after {
+    content: '▼ less';
+  }
+  .feed:not(.open) .feed-item:not(:first-child),
+  .feed:not(.open) .coach ~ .feed-list,
+  .feed:not(.open) .steps {
+    display: none;
+  }
+  .feed-item {
+    font-size: 13px;
+    padding: 5px 8px;
+  }
+  .coach {
+    margin-bottom: 8px;
+    padding: 10px 12px;
+  }
+  .coach p {
+    font-size: 14px;
+    margin: 2px 0 8px;
+  }
+  .steps {
+    margin-bottom: 8px;
+  }
+  /* screens menu: a scrolling row at the bottom */
+  .rail {
+    order: 4;
+    flex-direction: row;
+    flex-shrink: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: none;
+    border-top: 1px solid var(--edge);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    gap: 4px;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-btn {
+    flex: 0 0 auto;
+    min-width: 68px;
+    padding: 6px 6px 4px;
+    font-size: 11px;
+    border-radius: 14px;
+  }
+  .rail-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .rail-sep {
+    width: 1px;
+    height: auto;
+    margin: 6px 4px;
+    flex-shrink: 0;
+  }
+  .toasts {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    top: calc(96px + env(safe-area-inset-top));
+    bottom: auto;
+  }
+  .undo-btn {
+    bottom: calc(150px + env(safe-area-inset-bottom));
+  }
+  .modal {
+    width: 94vw;
+    max-height: 88dvh;
+    padding: 18px;
+  }
+  /* every screen: one column where the desktop has several side by side */
+  .lab,
+  .lab-stats,
+  .production,
+  .drop-live,
+  .drop-plan,
+  .mk-grid,
+  .rival-grid,
+  .charts,
+  .stats-bottom,
+  .empire-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .kpis,
+  .stat-cards,
+  .city-grid,
+  .look-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .empire-kpis {
+    flex-wrap: wrap;
+  }
+  .empire-kpis .kpi {
+    min-width: 0;
+    flex: 1 1 40%;
+  }
+  .shop-row,
+  .staff,
+  .offer {
+    grid-template-columns: 56px minmax(0, 1fr) !important;
+    gap: 8px 10px;
+  }
+  .shop-row > :nth-child(n + 3),
+  .staff > :nth-child(n + 3),
+  .offer > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+  }
+  .staff-pay {
+    align-items: flex-start;
+  }
+  .candidate {
+    grid-template-columns: 48px minmax(0, 1fr) auto !important;
+  }
+  /* the chart: rank, emblem, name, value (followers are on the cards below) */
+  .board li {
+    grid-template-columns: 22px 18px 28px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .board li > :nth-child(5) {
+    display: none;
+  }
+  .shipments li {
+    grid-template-columns: minmax(0, 1fr) 80px 30px;
+    gap: 8px;
+  }
+  .name-input {
+    min-width: 0;
+  }
+  /* main menu and new game */
+  .mainmenu {
+    height: 100dvh;
+    align-items: flex-start;
+    padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+  }
+  .mainmenu > :not(.mainmenu-bg) {
+    margin: auto 0;
+  }
+  .title {
+    font-size: min(12.5vw, 72px);
+  }
+  .tagline {
+    font-size: 15px;
+  }
+  .newgame {
+    width: 100%;
+    padding: 16px 0;
+  }
+  .newgame-grid,
+  .difficulties {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  /* full-screen moments scroll instead of being cut off */
+  .splash {
+    overflow-y: auto;
+    align-items: flex-start;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  .splash > * {
+    margin: auto 0;
+    max-width: 100%;
+  }
+  h2.display {
+    font-size: 26px;
+  }
+}
+/* phone on its side: very little height, so the feed strip shows just its title */
+@media (max-height: 520px) {
+  .feed:not(.open) .feed-list {
+    display: none;
+  }
+  .feed {
+    padding: 4px 12px;
+  }
+  .feed-title {
+    margin: 0;
+  }
+  .rail-btn {
+    padding: 4px 6px 2px;
+  }
+}

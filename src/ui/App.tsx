@@ -133,9 +133,13 @@ export function App() {
     const onUnload = () => store.saveSync('auto');
     window.addEventListener('beforeunload', onUnload);
     window.streetwear?.onBeforeClose(onUnload);
+    // Phones never say goodbye: iOS just freezes the page when you switch apps, so save then.
+    const onHide = () => document.visibilityState === 'hidden' && onUnload();
+    if (!window.streetwear) document.addEventListener('visibilitychange', onHide);
     return () => {
       store.stopClock();
       window.removeEventListener('beforeunload', onUnload);
+      document.removeEventListener('visibilitychange', onHide);
     };
   }, [store]);
   if (intro) return <Intro onDone={() => setIntro(false)} />;

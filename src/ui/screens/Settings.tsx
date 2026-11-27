@@ -149,46 +149,47 @@ export function SettingsBlock() {
           ))}
         </div>
       </div>
-      <div className="music-box">
-        <h3>Your music</h3>
-        <p className="muted small">
-          The game plays your own tracks if you put them in its music folder, named <strong>menu</strong>, <strong>game</strong> and <strong>drop</strong> (mp3, wav, ogg, m4a or flac). Restart the game after adding them.
-        </p>
-        <p className="small">{tracks.length ? `Found: ${tracks.join(', ')}` : 'No tracks yet. The game stays quiet until you add some.'}</p>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={mOn}
-            onChange={(e) => {
-              setMOn(e.target.checked);
-              music.setEnabled(e.target.checked);
-              persist();
-            }}
-          />
-          Play my music
-        </label>
-        <div className="field">
-          <label htmlFor="mvol">Music volume: {Math.round(mVol * 100)}%</label>
-          <input
-            id="mvol"
-            type="range"
-            min={0}
-            max={100}
-            value={Math.round(mVol * 100)}
-            onChange={(e) => {
-              const v = Number(e.target.value) / 100;
-              setMVol(v);
-              music.setVolume(v);
-              persist();
-            }}
-          />
-        </div>
-        {desktop && (
+      {/* your own music needs the desktop version: it reads a folder on the PC */}
+      {desktop && (
+        <div className="music-box">
+          <h3>Your music</h3>
+          <p className="muted small">
+            The game plays your own tracks if you put them in its music folder, named <strong>menu</strong>, <strong>game</strong> and <strong>drop</strong> (mp3, wav, ogg, m4a or flac). Restart the game after adding them.
+          </p>
+          <p className="small">{tracks.length ? `Found: ${tracks.join(', ')}` : 'No tracks yet. The game stays quiet until you add some.'}</p>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={mOn}
+              onChange={(e) => {
+                setMOn(e.target.checked);
+                music.setEnabled(e.target.checked);
+                persist();
+              }}
+            />
+            Play my music
+          </label>
+          <div className="field">
+            <label htmlFor="mvol">Music volume: {Math.round(mVol * 100)}%</label>
+            <input
+              id="mvol"
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(mVol * 100)}
+              onChange={(e) => {
+                const v = Number(e.target.value) / 100;
+                setMVol(v);
+                music.setVolume(v);
+                persist();
+              }}
+            />
+          </div>
           <button className="btn" onClick={() => window.streetwear!.openMusicFolder?.()} data-testid="open-music-folder">
             Open the music folder
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="row">
         <button className="btn btn-ghost" onClick={() => sfx.play('soldout', 1)}>
           Test the sold-out sound

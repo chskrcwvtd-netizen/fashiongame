@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useGame } from '../hooks';
 import type { Panel } from '../../store/gameStore';
 import { Coach } from './Moments';
@@ -37,10 +38,14 @@ export function FirstSteps() {
 
 export function Feed() {
   const { store } = useGame();
+  // Only the phone layout uses this: there the feed is a strip that opens with a tap.
+  const [open, setOpen] = useState(false);
   return (
-    <aside className="feed">
+    <aside className={`feed ${open ? 'open' : ''}`}>
       {store.tutorial ? <Coach /> : <FirstSteps />}
-      <h3 className="feed-title">Live feed</h3>
+      <h3 className="feed-title" onClick={() => setOpen(!open)} data-testid="feed-toggle">
+        Live feed
+      </h3>
       <ul className="feed-list" data-testid="feed">
         {store.feed.map((f) => (
           <li key={f.id} className={`feed-item tone-${f.tone}`}>
